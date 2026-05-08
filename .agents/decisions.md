@@ -278,3 +278,15 @@ Terraform setup now includes:
 - `pnpm tf:plan`
 
 Terraform continues to own DNS/provider setup boundaries; Supabase schema/RLS remains migration-owned.
+
+## 2026-05-08 — Production Terraform auto-applies before deploy
+
+Trunk now runs production Terraform auto-apply before Cloudflare deploy. The workflow order is:
+
+```text
+CI gates -> Terraform validation -> Terraform auto-apply -> Cloudflare deploy
+```
+
+The current prod Terraform ownership surface is intentionally narrow: Cloudflare DNS plus optional future provider/project setup. Existing `www.freddyfounders.com` DNS is imported at plan time through Terraform config-driven import so trunk can enforce the record without manual local state.
+
+This is acceptable for the current DNS-only prod surface. Before using Terraform for stateful or sensitive resources, add durable remote state/locking and avoid storing sensitive provider-created values in transient CI state.

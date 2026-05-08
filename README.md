@@ -83,9 +83,10 @@ Terraform local setup:
 ```bash
 cp infra/terraform/terraform.tfvars.example infra/terraform/terraform.tfvars
 CLOUDFLARE_API_TOKEN=... CLOUDFLARE_ACCOUNT_ID=... mise run tf:plan
+CLOUDFLARE_API_TOKEN=... CLOUDFLARE_ACCOUNT_ID=... mise run tf:apply
 ```
 
-Terraform owns DNS and optional provider/project setup. Supabase schema/RLS remains migration-owned in `supabase/migrations/`.
+Terraform owns DNS and optional provider/project setup. Supabase schema/RLS remains migration-owned in `supabase/migrations/`. On trunk, GitHub Actions auto-applies production Terraform before deployment. Current prod Terraform uses config-driven import for the existing `www` DNS record; add durable remote state before using Terraform for stateful/sensitive resources.
 
 The pre-commit hook runs:
 
@@ -100,8 +101,8 @@ The canonical trunk is `main`.
 Automation lives in `.github/workflows/verify.yml` and is code-owned:
 
 ```text
-pull_request -> CI gates only
-push main    -> CI gates -> Terraform validation -> Cloudflare deploy
+pull_request -> CI gates + Terraform validation
+push main    -> CI gates -> Terraform validation -> Terraform auto-apply -> Cloudflare deploy
 ```
 
 The deploy job uses `wrangler.jsonc` as the deployment source of truth and publishes the built `dist/` artifact as a Cloudflare Worker with static assets.

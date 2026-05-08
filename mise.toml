@@ -104,6 +104,10 @@ run = "pnpm tf:validate"
 description = "Run Terraform init/fmt/validate/plan using provider env vars"
 run = "pnpm tf:plan"
 
+
+[tasks."tf:apply"]
+description = "Auto-apply production Terraform using provider env vars"
+run = "pnpm tf:apply"
 [tasks.deploy]
 description = "Build and deploy via Wrangler"
 run = "pnpm deploy"

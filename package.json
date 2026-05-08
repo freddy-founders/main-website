@@ -31,6 +31,7 @@
     "tf:fmt": "terraform -chdir=infra/terraform fmt -recursive",
     "tf:validate": "terraform -chdir=infra/terraform validate",
     "tf:plan": "sh scripts/terraform-plan.sh",
+    "tf:apply": "sh scripts/terraform-apply.sh",
     "deploy": "sh scripts/deploy-cloudflare.sh",
     "bootstrap:github-cd": "sh scripts/bootstrap-github-cd.sh"
   },
