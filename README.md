@@ -86,7 +86,7 @@ CLOUDFLARE_API_TOKEN=... CLOUDFLARE_ACCOUNT_ID=... mise run tf:plan
 CLOUDFLARE_API_TOKEN=... CLOUDFLARE_ACCOUNT_ID=... mise run tf:apply
 ```
 
-Terraform owns DNS and optional provider/project setup. Supabase schema/RLS remains migration-owned in `supabase/migrations/`. Trunk can auto-apply production Terraform before deployment when `TERRAFORM_AUTO_APPLY=true` and GitHub secret `CLOUDFLARE_TERRAFORM_API_TOKEN` is set with DNS read/edit permissions. Current prod Terraform uses config-driven import for the existing `www` DNS record; add durable remote state before using Terraform for stateful/sensitive resources.
+Terraform owns DNS and optional provider/project setup. Supabase schema/RLS remains migration-owned in `supabase/migrations/`. Trunk can auto-apply production Terraform before deployment when `TERRAFORM_AUTO_APPLY=true` and GitHub secret `CLOUDFLARE_API_TOKEN` includes both Workers deploy permissions and Cloudflare Zone DNS read/edit permission for `freddyfounders.com`. Current prod Terraform uses config-driven import for the existing `www` DNS record; add durable remote state before using Terraform for stateful/sensitive resources.
 
 The pre-commit hook runs:
 
@@ -105,7 +105,7 @@ pull_request -> CI gates + Terraform validation
 push main    -> CI gates -> Terraform validation -> optional Terraform auto-apply -> Cloudflare deploy
 ```
 
-Terraform auto-apply is feature-flagged by the GitHub variable `TERRAFORM_AUTO_APPLY`. It should remain `false` until `CLOUDFLARE_TERRAFORM_API_TOKEN` exists with Cloudflare Zone DNS read/edit permission for `freddyfounders.com`.
+Terraform auto-apply is feature-flagged by the GitHub variable `TERRAFORM_AUTO_APPLY`. It should remain `false` until `CLOUDFLARE_API_TOKEN` has Cloudflare Zone DNS read/edit permission for `freddyfounders.com`.
 
 The deploy job uses `wrangler.jsonc` as the deployment source of truth and publishes the built `dist/` artifact as a Cloudflare Worker with static assets.
 
