@@ -6,12 +6,19 @@ import { listPublicEvents } from './application/events';
 import { listPublicPeople } from './application/people';
 import {
   AppChrome,
+  BoardAside,
+  BoardColumn,
+  BoardSection,
   Button,
   ButtonLink,
+  ChipBar,
+  FieldList,
   Field,
   FieldGrid,
-  Notice,
   PageShell,
+  ScheduleMarker,
+  ScheduleRow,
+  SpecPanel,
   Panel,
   Rail,
   Row,
@@ -50,6 +57,52 @@ function useAsyncList<T>(loader: () => Promise<T[]>): T[] {
   return items;
 }
 
+const halifaxDate = new Intl.DateTimeFormat('en-US', {
+  day: '2-digit',
+  month: 'short',
+  timeZone: 'America/Halifax',
+  weekday: 'short',
+});
+
+const halifaxTime = new Intl.DateTimeFormat('en-CA', {
+  hour: '2-digit',
+  hour12: false,
+  minute: '2-digit',
+  timeZone: 'America/Halifax',
+});
+
+function eventMarkerParts(startsAt: string) {
+  const date = new Date(startsAt);
+  const parts = Object.fromEntries(
+    halifaxDate.formatToParts(date).map((part) => [part.type, part.value]),
+  );
+
+  return {
+    day: parts.day ?? '',
+    month: (parts.month ?? '').toUpperCase(),
+    time: halifaxTime.format(date),
+    weekday: (parts.weekday ?? '').toUpperCase(),
+  };
+}
+
+function eventMeta(event: EventSummary): string {
+  return `${event.locationLabel} / public / ${event.capacityStatus}`;
+}
+
+function eventTags(event: EventSummary) {
+  return [
+    {
+      label: event.capacityStatus,
+      tone: event.capacityStatus === 'open' ? 'success' : 'neutral',
+    } as const,
+    { label: event.registrationMode === 'external' ? 'register first' : 'rsvp seam' },
+  ];
+}
+
+function byStartDateAscending(left: EventSummary, right: EventSummary): number {
+  return new Date(left.startsAt).getTime() - new Date(right.startsAt).getTime();
+}
+
 function Shell() {
   return (
     <AppChrome>
@@ -69,40 +122,118 @@ function Shell() {
 
 function EventsPage() {
   const events = useAsyncList<PublicEventView>(listPublicEvents);
+  const people = useAsyncList<PersonSummary>(listPublicPeople);
+  const today = new Date('2026-05-08T00:00:00.000-03:00').getTime();
+  const upcomingEvents = events
+    .filter((event) => new Date(event.startsAt).getTime() >= today)
+    .sort(byStartDateAscending);
+  const pastEvents = events
+    .filter((event) => new Date(event.startsAt).getTime() < today)
+    .sort(byStartDateAscending);
 
   return (
     <PageShell>
-      <Panel title="Upcoming Events" eyebrow="Default List">
-        <RowList>
-          {events.map((event) => (
-            <Row
-              key={event.id}
-              title={event.title}
-              meta={`${new Date(event.startsAt).toLocaleDateString()} / ${event.locationLabel} / ${event.capacityStatus}`}
-              actions={
-                event.registrationAction.kind === 'external' ? (
-                  <ButtonLink href={event.registrationAction.url}>
-                    {event.registrationAction.label}
-                  </ButtonLink>
-                ) : (
-                  <Notice>{event.registrationAction.label}</Notice>
-                )
-              }
-            >
-              {event.summary}
-            </Row>
+      <BoardColumn>
+        <BoardSection label="Upcoming Events" meta="Default List">
+          {upcomingEvents.map((event) => (
+            <EventScheduleRow key={event.id} event={event} />
           ))}
-        </RowList>
-      </Panel>
-      <Rail
-        title="Public events"
-        copy="Events are the front page. Registration stays external or disabled until the internal RSVP seam is explicitly activated."
-        stats={[
-          { value: String(events.length).padStart(2, '0'), label: 'Upcoming events' },
-          { value: '00', label: 'Internal RSVPs' },
-        ]}
-      />
+        </BoardSection>
+        <BoardSection label="Past" meta="Archive" tone="black">
+          {pastEvents.map((event) => (
+            <EventScheduleRow key={event.id} event={event} compact />
+          ))}
+        </BoardSection>
+      </BoardColumn>
+      <BoardAside>
+        <SpecPanel
+          eyebrow="Events"
+          title="Events"
+          context="Upcoming Freddy Founders events. Plain rows, useful metadata, RSVP/register first. No feed, no comments, no ranking."
+          notes={['Default public front page', 'Public / no login needed']}
+          stats={[
+            { value: String(upcomingEvents.length).padStart(2, '0'), label: 'Upcoming events' },
+            { value: String(people.length).padStart(2, '0'), label: 'Public people' },
+          ]}
+        />
+        <BoardSection label="Filters" meta="Events" tone="black">
+          <ChipBar
+            chips={[
+              { label: 'Upcoming', active: true },
+              { label: 'Open' },
+              { label: 'In person' },
+              { label: 'Remote' },
+              { label: 'Past' },
+            ]}
+          />
+        </BoardSection>
+        <BoardSection label="Rows Show" meta="Event Fields" tone="black">
+          <FieldList
+            items={[
+              'Date/time, location or format, host, and status.',
+              'One-line fit/context plus RSVP/register action.',
+              'Small tags for capacity and routing cues.',
+            ]}
+          />
+        </BoardSection>
+      </BoardAside>
     </PageShell>
+  );
+}
+
+function EventScheduleRow({
+  event,
+  compact = false,
+}: {
+  event: PublicEventView;
+  compact?: boolean;
+}) {
+  const marker = eventMarkerParts(event.startsAt);
+
+  return (
+    <ScheduleRow
+      marker={
+        <ScheduleMarker
+          day={marker.day}
+          month={marker.month}
+          time={compact ? undefined : marker.time}
+          weekday={marker.weekday}
+        />
+      }
+      title={event.title}
+      meta={eventMeta(event)}
+      tags={compact ? [] : eventTags(event)}
+      actions={
+        event.registrationAction.kind === 'external' ? (
+          <>
+            <ButtonLink href={event.registrationAction.url}>
+              {event.registrationAction.label}
+            </ButtonLink>
+            <Button type="button" tone="neutral">
+              Details
+            </Button>
+          </>
+        ) : event.registrationAction.kind === 'future-internal' ? (
+          <>
+            <Button type="button">{event.registrationAction.label}</Button>
+            <Button type="button" tone="neutral">
+              Details
+            </Button>
+          </>
+        ) : (
+          <>
+            <Button type="button" tone="neutral">
+              {event.registrationAction.label}
+            </Button>
+            <Button type="button" tone="neutral">
+              Details
+            </Button>
+          </>
+        )
+      }
+    >
+      {compact ? undefined : event.summary}
+    </ScheduleRow>
   );
 }
 

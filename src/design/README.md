@@ -37,7 +37,10 @@ foundations -> primitives -> composites -> patterns -> routes/pages
 
 - `foundations/` — internal helpers and strict prop types. Not a route/page API.
 - `primitives/` — small reusable UI atoms: `Button`, `ButtonLink`, `Tag`, `Meta`, `Notice`, `TextInput`, `TextArea`.
-- `composites/` — composed layout/content units: `AppChrome`, `Topbar`, `PageShell`, `Panel`, `Rail`, `RailSection`, `Row`, `RowList`, `TagList`, `Field`, `FieldGrid`.
+- `composites/` — composed layout/content units:
+  - app frame: `AppChrome`, `Topbar`, `PageShell`
+  - generic content: `Panel`, `Rail`, `RailSection`, `Row`, `RowList`, `TagList`, `Field`, `FieldGrid`
+  - operational board grammar: `BoardColumn`, `BoardAside`, `BoardSection`, `ScheduleRow`, `ScheduleMarker`, `SpecPanel`, `StatGrid`, `ChipBar`, `FieldList`
 - `patterns/` — larger reusable product/catalog shapes. Current pattern: `DesignLibraryExample`.
 
 ## Ownership rules

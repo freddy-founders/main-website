@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-labelledby="title">
+  <title>Freddy Founders FF icon</title>
+  <rect width="64" height="64" fill="#9f2d20" />
+  <rect x="3" y="3" width="58" height="58" fill="none" stroke="#fffaf1" stroke-width="3" />
+  <text
+    x="32"
+    y="39"
+    fill="#fffaf1"
+    font-family="Arial, Helvetica, sans-serif"
+    font-size="24"
+    font-weight="900"
+    letter-spacing="-2"
+    text-anchor="middle"
+  >FF</text>
+</svg>

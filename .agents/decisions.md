@@ -224,3 +224,30 @@ Enforcement:
 - `pnpm design:check` runs in precommit and GitHub Actions before deploy.
 
 Rationale: this keeps the mock-derived visual language maintainable and prevents drift back into ad hoc CSS.
+
+## 2026-05-08 — Layout frame is centered, aligned, and tight
+
+The Freddy Founders topbar, stripe, and page content should share one centered frame width. The topbar must not span the full viewport while the content sits in a narrower slab.
+
+The canonical visual mode remains Swiss Industrial Print from the brutalist reference: light paper substrate, brick accent, hard borders, deterministic grid, square corners, uppercase metadata, and tight compartmentalized information density.
+
+The Freddy Founders mark is `FF`, and the repo-owned site icon is a white-on-brick `FF` square at `public/site-icon.svg`. Primary navigation belongs in the left command line as `Freddy Founders / Events / People / Companies`; Login/Register remain boxed account actions on the right. The current page is indicated with an underline, not a filled nav button.
+
+Rationale: the page should read as one engineered artifact, not disconnected full-width header plus floating content card.
+
+## 2026-05-08 — Events page decomposes into operational board primitives
+
+The current Events reference is not the earlier generic panel/list layout. It decomposes into an operational board grammar:
+
+- command topbar with inline primary nav and underlined current page
+- aligned stripe and content frame
+- primary board column
+- bracketed section bars
+- schedule rows with date marker, title, metadata, copy, tags, and actions
+- right spec panel with macro `Events` title, context, notes, and stat cells
+- filter chip bar
+- numbered field-list explainer rows
+
+These are now canonical design composites in `src/design/composites/board.tsx`, backed by `src/design/design-system.css` and `src/design/registry.ts`.
+
+Rationale: the live Events page should match the new tighter reference grammar directly, while keeping the design library as the source of reusable layout primitives.

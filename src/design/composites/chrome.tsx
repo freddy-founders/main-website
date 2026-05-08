@@ -8,15 +8,18 @@ export function AppChrome({ children }: { children: ReactNode }) {
 export function Topbar() {
   return (
     <header className="ff-topbar">
-      <div className="ff-mark ff-mono">F</div>
-      <div className="ff-brand-block">
-        <div className="ff-brand">Freddy Founders</div>
-        <div className="ff-brand-subtitle ff-mono">Events / People / Companies</div>
+      <div className="ff-mark ff-mono" aria-label="Freddy Founders mark">
+        FF
       </div>
-      <nav className="ff-nav" aria-label="Primary navigation">
-        <NavLink to="/events">Events</NavLink>
-        <NavLink to="/people">People</NavLink>
-        <NavLink to="/companies">Companies</NavLink>
+      <div className="ff-command-line">
+        <div className="ff-brand">Freddy Founders</div>
+        <nav className="ff-primary-nav" aria-label="Primary navigation">
+          <NavLink to="/events">Events</NavLink>
+          <NavLink to="/people">People</NavLink>
+          <NavLink to="/companies">Companies</NavLink>
+        </nav>
+      </div>
+      <nav className="ff-auth-nav" aria-label="Account navigation">
         <NavLink to="/login">Login</NavLink>
         <NavLink to="/register">Register</NavLink>
       </nav>
