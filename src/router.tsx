@@ -9,6 +9,7 @@ import {
   Button,
   ButtonLink,
   Field,
+  FieldGrid,
   Notice,
   PageShell,
   Panel,
@@ -171,7 +172,7 @@ function LoginPage() {
   return (
     <PageShell>
       <Panel title="Login" eyebrow="Returning Member / Admin">
-        <div className="ff-field-grid">
+        <FieldGrid>
           <Field label="Email">
             <TextInput
               type="email"
@@ -181,7 +182,7 @@ function LoginPage() {
             />
           </Field>
           <Button type="button">Continue</Button>
-        </div>
+        </FieldGrid>
       </Panel>
       <Rail
         title="No browsing wall"
@@ -195,7 +196,7 @@ function RegisterPage() {
   return (
     <PageShell>
       <Panel title="Registration" eyebrow="Request Account">
-        <div className="ff-field-grid">
+        <FieldGrid>
           <Field label="Name">
             <TextInput name="name" autoComplete="name" placeholder="Full name" />
           </Field>
@@ -218,7 +219,7 @@ function RegisterPage() {
             />
           </Field>
           <Button type="button">Request access</Button>
-        </div>
+        </FieldGrid>
       </Panel>
       <Rail
         title="Consent-aware"

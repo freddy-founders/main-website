@@ -200,7 +200,7 @@
 }
 
 .ff-row-copy {
-  color: #262622;
+  color: var(--semantic-text-primary);
   font-size: var(--size-text-sm);
   line-height: var(--line-body);
 }

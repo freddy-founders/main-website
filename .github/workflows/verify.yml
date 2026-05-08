@@ -41,6 +41,9 @@ jobs:
       - name: Build design tokens
         run: pnpm tokens:build
 
+      - name: Check design contract
+        run: pnpm design:check
+
       - name: Typecheck
         run: pnpm check:types
 

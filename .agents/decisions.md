@@ -196,3 +196,27 @@ Required secret material stays outside git:
 - Cloudflare DNS zone ownership for `freddyfounders.com`
 
 Rationale: code should define the CI/CD pipeline and deploy shape, while secret values remain provider/GitHub-managed.
+
+## 2026-05-08 — Design library is canonical and repo-enforced
+
+Freddy Founders should have a formal design library, not page-local styling. The canonical design surface is `src/design/`.
+
+Design source-of-truth flow:
+
+- `tokens/source/core.json` owns raw token decisions.
+- Style Dictionary generates `src/styles/generated/tokens.css`.
+- `src/design/design-system.css` owns private `ff-*` classes and visual grammar.
+- `src/design/components.tsx` owns React primitives consumed by app pages.
+- `src/design/registry.ts` documents each canonical primitive.
+- `src/design/examples.tsx` provides representative usage for future review.
+- `src/design/README.md` documents the contract.
+
+Enforcement:
+
+- app pages must consume exported design primitives from `src/design`.
+- app pages must not reference private `ff-*` classes directly.
+- raw color values belong in token source/generated output, not app code.
+- exported primitives must be listed in `designComponentRegistry`.
+- `pnpm design:check` runs in precommit and GitHub Actions before deploy.
+
+Rationale: this keeps the mock-derived visual language maintainable and prevents drift back into ad hoc CSS.

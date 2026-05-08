@@ -133,11 +133,31 @@ Secrets are intentionally not committed; the bootstrap script and workflow are t
 - Admin is maintenance-oriented.
 - No forum, resource library, social graph, messaging, voting, ranking, payment, or ticketing scope.
 
-## Design tokens
+## Design Library
 
-Source tokens live in `tokens/source/*.json`.
+The canonical design library lives in `src/design/`.
 
-Generated CSS variables live in `src/styles/generated/tokens.css` and are imported through `src/styles/tokens.css`.
+Design source-of-truth flow:
+
+```text
+tokens/source/core.json
+  -> Style Dictionary
+  -> src/styles/generated/tokens.css
+  -> src/design/design-system.css
+  -> src/design/components.tsx
+  -> app pages
+```
+
+Design-library rules are documented in `src/design/README.md` and enforced by `pnpm design:check`.
+
+Key contract:
+
+- app pages consume exported primitives from `src/design`
+- `ff-*` classes are private to `src/design`
+- raw color values belong in token source, not app code
+- every exported primitive must appear in `src/design/registry.ts`
+
+Generated CSS variables are imported through `src/styles/tokens.css`.
 
 ## Requirements as Code
 
