@@ -1,9 +1,25 @@
 import { useEffect, useState } from 'react';
-import { NavLink, Navigate, Route, Routes } from 'react-router-dom';
+import { Navigate, Route, Routes } from 'react-router-dom';
 import { listPendingRegistrationRequests } from './application/admin';
 import { listPublicCompanies } from './application/companies';
 import { listPublicEvents } from './application/events';
 import { listPublicPeople } from './application/people';
+import {
+  AppChrome,
+  Button,
+  ButtonLink,
+  Field,
+  Notice,
+  PageShell,
+  Panel,
+  Rail,
+  Row,
+  RowList,
+  TagList,
+  TextArea,
+  TextInput,
+  Topbar,
+} from './design';
 import type { RegistrationRequest } from './domain/accounts';
 import type { CompanySummary } from './domain/companies';
 import type { EventRegistrationAction, EventSummary } from './domain/events';
@@ -35,17 +51,8 @@ function useAsyncList<T>(loader: () => Promise<T[]>): T[] {
 
 function Shell() {
   return (
-    <div className="shell">
-      <header className="topbar">
-        <div className="brand">Freddy Founders</div>
-        <nav className="nav" aria-label="Primary navigation">
-          <NavLink to="/events">Events</NavLink>
-          <NavLink to="/people">People</NavLink>
-          <NavLink to="/companies">Companies</NavLink>
-          <NavLink to="/login">Login</NavLink>
-          <NavLink to="/register">Register</NavLink>
-        </nav>
-      </header>
+    <AppChrome>
+      <Topbar />
       <Routes>
         <Route path="/" element={<Navigate to="/events" replace />} />
         <Route path="/events" element={<EventsPage />} />
@@ -55,7 +62,7 @@ function Shell() {
         <Route path="/register" element={<RegisterPage />} />
         <Route path="/admin" element={<AdminPage />} />
       </Routes>
-    </div>
+    </AppChrome>
   );
 }
 
@@ -63,43 +70,38 @@ function EventsPage() {
   const events = useAsyncList<PublicEventView>(listPublicEvents);
 
   return (
-    <main className="main-grid">
-      <section className="panel" aria-labelledby="events-heading">
-        <div className="panel-header">
-          <h1 id="events-heading">Events</h1>
-        </div>
-        <ul className="row-list">
+    <PageShell>
+      <Panel title="Upcoming Events" eyebrow="Default List">
+        <RowList>
           {events.map((event) => (
-            <li className="row" key={event.id}>
-              <div className="row-title">{event.title}</div>
-              <div>{event.summary}</div>
-              <div className="meta">
-                {new Date(event.startsAt).toLocaleDateString()} · {event.locationLabel} ·{' '}
-                {event.capacityStatus}
-              </div>
-              {event.registrationAction.kind === 'external' ? (
-                <div className="actions">
-                  <a className="button" href={event.registrationAction.url}>
+            <Row
+              key={event.id}
+              title={event.title}
+              meta={`${new Date(event.startsAt).toLocaleDateString()} / ${event.locationLabel} / ${event.capacityStatus}`}
+              actions={
+                event.registrationAction.kind === 'external' ? (
+                  <ButtonLink href={event.registrationAction.url}>
                     {event.registrationAction.label}
-                  </a>
-                </div>
-              ) : (
-                <div className="notice">{event.registrationAction.label}</div>
-              )}
-            </li>
+                  </ButtonLink>
+                ) : (
+                  <Notice>{event.registrationAction.label}</Notice>
+                )
+              }
+            >
+              {event.summary}
+            </Row>
           ))}
-        </ul>
-      </section>
-      <aside className="rail" aria-label="Events context">
-        <div className="rail-section">
-          <h2>Public events</h2>
-        </div>
-        <div className="notice">
-          Events are the front page. Registration stays external or disabled until the internal RSVP
-          seam is explicitly activated.
-        </div>
-      </aside>
-    </main>
+        </RowList>
+      </Panel>
+      <Rail
+        title="Public events"
+        copy="Events are the front page. Registration stays external or disabled until the internal RSVP seam is explicitly activated."
+        stats={[
+          { value: String(events.length).padStart(2, '0'), label: 'Upcoming events' },
+          { value: '00', label: 'Internal RSVPs' },
+        ]}
+      />
+    </PageShell>
   );
 }
 
@@ -107,32 +109,30 @@ function PeoplePage() {
   const people = useAsyncList<PersonSummary>(listPublicPeople);
 
   return (
-    <main className="main-grid">
-      <section className="panel" aria-labelledby="people-heading">
-        <div className="panel-header">
-          <h1 id="people-heading">People</h1>
-        </div>
-        <ul className="row-list">
+    <PageShell>
+      <Panel title="Directory" eyebrow="Public-Safe Rows">
+        <RowList>
           {people.map((person) => (
-            <li className="row" key={person.id}>
-              <div className="row-title">{person.name}</div>
-              <div>{person.founderContext}</div>
-              <div className="meta">
-                {person.role} · {person.companyName ?? 'Independent'} · {person.topics.join(', ')}
-              </div>
-            </li>
+            <Row
+              key={person.id}
+              title={person.name}
+              meta={`${person.role} / ${person.companyName ?? 'Independent'} / ${person.locationLabel ?? 'Location Hidden'}`}
+              actions={<TagList items={person.topics} />}
+            >
+              {person.founderContext}
+            </Row>
           ))}
-        </ul>
-      </section>
-      <aside className="rail" aria-label="People context">
-        <div className="rail-section">
-          <h2>Directory rules</h2>
-        </div>
-        <div className="notice">
-          Public people rows must be published, public, and consented for directory display.
-        </div>
-      </aside>
-    </main>
+        </RowList>
+      </Panel>
+      <Rail
+        title="Directory rules"
+        copy="People rows must be published, public, and consented for directory display. This is context, not a social feed."
+        stats={[
+          { value: String(people.length).padStart(2, '0'), label: 'Public people' },
+          { value: 'YES', label: 'Consent gate' },
+        ]}
+      />
+    </PageShell>
   );
 }
 
@@ -140,101 +140,91 @@ function CompaniesPage() {
   const companies = useAsyncList<CompanySummary>(listPublicCompanies);
 
   return (
-    <main className="main-grid">
-      <section className="panel" aria-labelledby="companies-heading">
-        <div className="panel-header">
-          <h1 id="companies-heading">Companies</h1>
-        </div>
-        <ul className="row-list">
+    <PageShell>
+      <Panel title="Companies" eyebrow="YC-Style Directory">
+        <RowList>
           {companies.map((company) => (
-            <li className="row" key={company.id}>
-              <div className="row-title">{company.name}</div>
-              <div>{company.tagline}</div>
-              <div className="meta">
-                {company.category} · {company.stage ?? 'stage unknown'} ·{' '}
-                {company.locationLabel ?? 'location unknown'}
-              </div>
-            </li>
+            <Row
+              key={company.id}
+              title={company.name}
+              meta={`${company.category} / ${company.stage ?? 'Stage Unknown'} / ${company.locationLabel ?? 'Location Unknown'}`}
+              actions={<TagList items={company.relatedPeople} />}
+            >
+              {company.tagline}
+            </Row>
           ))}
-        </ul>
-      </section>
-      <aside className="rail" aria-label="Companies context">
-        <div className="rail-section">
-          <h2>YC-style index</h2>
-        </div>
-        <div className="notice">
-          Companies are a compact network directory, not a vendor marketplace or marketing site.
-        </div>
-      </aside>
-    </main>
+        </RowList>
+      </Panel>
+      <Rail
+        title="Company index"
+        copy="Companies are a compact network directory, not a vendor marketplace or marketing landing page."
+        stats={[
+          { value: String(companies.length).padStart(2, '0'), label: 'Public companies' },
+          { value: 'NO', label: 'Marketplace' },
+        ]}
+      />
+    </PageShell>
   );
 }
 
 function LoginPage() {
   return (
-    <main className="main-grid">
-      <section className="panel" aria-labelledby="login-heading">
-        <div className="panel-header">
-          <h1 id="login-heading">Login</h1>
+    <PageShell>
+      <Panel title="Login" eyebrow="Returning Member / Admin">
+        <div className="ff-field-grid">
+          <Field label="Email">
+            <TextInput
+              type="email"
+              name="email"
+              autoComplete="email"
+              placeholder="you@company.com"
+            />
+          </Field>
+          <Button type="button">Continue</Button>
         </div>
-        <form className="form-grid">
-          <label className="field">
-            <span>Email</span>
-            <input type="email" name="email" autoComplete="email" />
-          </label>
-          <button className="button" type="button">
-            Continue
-          </button>
-        </form>
-      </section>
-      <aside className="rail" aria-label="Login context">
-        <div className="rail-section">
-          <h2>No browsing wall</h2>
-        </div>
-        <div className="notice">Public Events, People, and Companies remain available.</div>
-      </aside>
-    </main>
+      </Panel>
+      <Rail
+        title="No browsing wall"
+        copy="Public Events, People, and Companies remain available. Login is for returning members, organizers, and admins."
+      />
+    </PageShell>
   );
 }
 
 function RegisterPage() {
   return (
-    <main className="main-grid">
-      <section className="panel" aria-labelledby="register-heading">
-        <div className="panel-header">
-          <h1 id="register-heading">Register</h1>
+    <PageShell>
+      <Panel title="Registration" eyebrow="Request Account">
+        <div className="ff-field-grid">
+          <Field label="Name">
+            <TextInput name="name" autoComplete="name" placeholder="Full name" />
+          </Field>
+          <Field label="Email">
+            <TextInput
+              type="email"
+              name="email"
+              autoComplete="email"
+              placeholder="you@company.com"
+            />
+          </Field>
+          <Field label="Company / Role">
+            <TextInput name="company-role" placeholder="Company / founder, operator, investor" />
+          </Field>
+          <Field label="Founder context">
+            <TextArea
+              name="founder-context"
+              rows={4}
+              placeholder="What context should organizers review?"
+            />
+          </Field>
+          <Button type="button">Request access</Button>
         </div>
-        <form className="form-grid">
-          <label className="field">
-            <span>Name</span>
-            <input name="name" autoComplete="name" />
-          </label>
-          <label className="field">
-            <span>Email</span>
-            <input type="email" name="email" autoComplete="email" />
-          </label>
-          <label className="field">
-            <span>Company / Role</span>
-            <input name="company-role" />
-          </label>
-          <label className="field">
-            <span>Founder context</span>
-            <textarea name="founder-context" rows={4} />
-          </label>
-          <button className="button" type="button">
-            Request access
-          </button>
-        </form>
-      </section>
-      <aside className="rail" aria-label="Registration context">
-        <div className="rail-section">
-          <h2>Consent-aware</h2>
-        </div>
-        <div className="notice">
-          Registration creates an account request. Public directory display is not automatic.
-        </div>
-      </aside>
-    </main>
+      </Panel>
+      <Rail
+        title="Consent-aware"
+        copy="Registration creates an account request. Public directory display is reviewed and consent-aware, not automatic."
+      />
+    </PageShell>
   );
 }
 
@@ -244,30 +234,29 @@ function AdminPage() {
   );
 
   return (
-    <main className="main-grid">
-      <section className="panel" aria-labelledby="admin-heading">
-        <div className="panel-header">
-          <h1 id="admin-heading">Admin Maintenance</h1>
-        </div>
-        <ul className="row-list">
+    <PageShell>
+      <Panel title="Admin Maintenance" eyebrow="Simple CRUD">
+        <RowList>
           {requests.map((request) => (
-            <li className="row" key={request.id}>
-              <div className="row-title">{request.name}</div>
-              <div>{request.founderContext}</div>
-              <div className="meta">{request.status} · registration request</div>
-            </li>
+            <Row
+              key={request.id}
+              title={request.name}
+              meta={`${request.status} / registration request`}
+            >
+              {request.founderContext}
+            </Row>
           ))}
-        </ul>
-      </section>
-      <aside className="rail" aria-label="Admin context">
-        <div className="rail-section">
-          <h2>Maintenance only</h2>
-        </div>
-        <div className="notice">
-          Admin should stay focused on Events, People, Companies, and pending registrations.
-        </div>
-      </aside>
-    </main>
+        </RowList>
+      </Panel>
+      <Rail
+        title="Maintenance only"
+        copy="Admin should stay focused on Events, People, Companies, and pending registrations. No dashboard sprawl."
+        stats={[
+          { value: String(requests.length).padStart(2, '0'), label: 'Pending' },
+          { value: 'CRUD', label: 'Scope' },
+        ]}
+      />
+    </PageShell>
   );
 }
 
