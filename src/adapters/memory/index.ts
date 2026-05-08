@@ -2,6 +2,7 @@ import { InMemoryAuthPort } from './auth';
 import { InMemoryCompanyRepository } from './companyRepository';
 import { InMemoryEventRepository } from './eventRepository';
 import { InMemoryPersonRepository } from './personRepository';
+import { InMemoryProfileRepository } from './profileRepository';
 import { InMemoryRegistrationRequestRepository } from './registrationRequestRepository';
 
 export function createInMemoryAdapters() {
@@ -11,5 +12,6 @@ export function createInMemoryAdapters() {
     people: new InMemoryPersonRepository(),
     companies: new InMemoryCompanyRepository(),
     registrationRequests: new InMemoryRegistrationRequestRepository(),
+    profiles: new InMemoryProfileRepository(),
   };
 }

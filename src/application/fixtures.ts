@@ -1,4 +1,4 @@
-import type { RegistrationRequest } from '../domain/accounts';
+import type { ProfileAccount, RegistrationRequest } from '../domain/accounts';
 import type { CompanySummary } from '../domain/companies';
 import type { EventSummary } from '../domain/events';
 import type { PersonSummary } from '../domain/people';
@@ -102,6 +102,25 @@ export const companies: CompanySummary[] = [
     relatedPeople: ['Amelia Foster'],
     publicationStatus: 'published',
     visibility: 'public',
+  },
+];
+
+export const profileAccounts: ProfileAccount[] = [
+  {
+    id: 'profile-owner',
+    email: 'owner@example.com',
+    name: 'Owner Founder',
+    role: 'admin',
+    isOwner: true,
+    createdAt: '2026-05-08T00:00:00.000Z',
+  },
+  {
+    id: 'profile-member',
+    email: 'member@example.com',
+    name: 'Member Founder',
+    role: 'member',
+    isOwner: false,
+    createdAt: '2026-05-08T00:00:00.000Z',
   },
 ];
 

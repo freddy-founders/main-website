@@ -15,3 +15,18 @@ Feature: Lightweight auth surfaces
     Given public browsing is open
     When a non-founder tries to request access for company website "https://operator.example"
     Then the signup request is rejected
+
+  Scenario: Admin page is admin-only
+    Given public browsing is open
+    When an organizer asks for profile governance
+    Then no profiles are returned
+
+  Scenario: Only admins can create admins
+    Given public browsing is open
+    When an organizer tries to promote a member to admin
+    Then the role change is rejected
+
+  Scenario: Admins can review profile governance
+    Given public browsing is open
+    When an admin asks for profile governance
+    Then profiles are returned for admin governance

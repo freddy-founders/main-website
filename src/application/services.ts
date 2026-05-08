@@ -8,6 +8,7 @@ import type { CompanyRepository } from '../ports/companies';
 import type { AuthPort } from '../ports/auth';
 import type { EventRepository } from '../ports/events';
 import type { PersonRepository } from '../ports/people';
+import type { ProfileRepository } from '../ports/profiles';
 import type { RegistrationRequestRepository } from '../ports/registrationRequests';
 
 export interface ApplicationPorts {
@@ -16,6 +17,7 @@ export interface ApplicationPorts {
   people: PersonRepository;
   companies: CompanyRepository;
   registrationRequests: RegistrationRequestRepository;
+  profiles: ProfileRepository;
 }
 
 export function createApplicationServices(ports: ApplicationPorts) {
@@ -72,6 +74,9 @@ export function createApplicationServices(ports: ApplicationPorts) {
     admin: {
       listPendingRegistrationRequests: (role: AccountRole | null) =>
         ports.registrationRequests.listPendingRegistrationRequests(role),
+      listProfiles: (role: AccountRole | null) => ports.profiles.listProfiles(role),
+      setProfileRole: ports.profiles.setProfileRole.bind(ports.profiles),
+      transferOwnership: ports.profiles.transferOwnership.bind(ports.profiles),
     },
   };
 }

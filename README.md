@@ -48,6 +48,8 @@ Copy `.env.example` to `.env` when real Supabase/Cloudflare values exist. Never 
 
 Auth uses Supabase passwordless magic links for returning members/admins. Public registration is a founder/company trust request: users provide company name + website, affirm they are a founder, and the app normalizes the website domain to create/ensure a private pending-review company object before admin review.
 
+Admin governance uses cumulative roles: `member < organizer < admin`. The `/admin` page is admin-only, only admins can promote users to admin, organizers can promote members to organizers through the backend role boundary, and ownership is a singleton capability stored separately from the role. The owner must remain an admin; first-owner bootstrap is a manual setup SQL operation once the owner profile exists.
+
 ## Development
 
 ```bash

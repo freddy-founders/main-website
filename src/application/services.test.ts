@@ -3,6 +3,7 @@ import { createApplicationServices, type ApplicationPorts } from './services';
 import type { CompanySummary } from '../domain/companies';
 import type { EventSummary } from '../domain/events';
 import type { PersonSummary } from '../domain/people';
+import type { ProfileAccount } from '../domain/accounts';
 
 const eventRecords: EventSummary[] = [
   {
@@ -47,6 +48,32 @@ const companyRecords: CompanySummary[] = [
   },
 ];
 
+const profileRecords: ProfileAccount[] = [
+  {
+    id: 'profile-admin',
+    email: 'admin@example.com',
+    name: 'Admin Founder',
+    role: 'admin',
+    isOwner: true,
+    createdAt: '2026-05-08T00:00:00.000Z',
+  },
+  {
+    id: 'profile-organizer',
+    email: 'organizer@example.com',
+    name: 'Organizer Founder',
+    role: 'organizer',
+    isOwner: false,
+    createdAt: '2026-05-08T00:00:00.000Z',
+  },
+  {
+    id: 'profile-member',
+    email: 'member@example.com',
+    name: 'Member Founder',
+    role: 'member',
+    isOwner: false,
+    createdAt: '2026-05-08T00:00:00.000Z',
+  },
+];
 function createPortsFixture(): ApplicationPorts {
   return {
     auth: {
@@ -105,6 +132,13 @@ function createPortsFixture(): ApplicationPorts {
         ];
       },
     },
+    profiles: {
+      async listProfiles(role) {
+        return role === 'admin' ? profileRecords : [];
+      },
+      async setProfileRole() {},
+      async transferOwnership() {},
+    },
   };
 }
 
@@ -129,6 +163,13 @@ describe('application services', () => {
 
     await expect(services.admin.listPendingRegistrationRequests(null)).resolves.toEqual([]);
     await expect(services.admin.listPendingRegistrationRequests('admin')).resolves.toHaveLength(1);
+  });
+
+  it('keeps profile governance behind an admin role', async () => {
+    const services = createApplicationServices(createPortsFixture());
+
+    await expect(services.admin.listProfiles('organizer')).resolves.toEqual([]);
+    await expect(services.admin.listProfiles('admin')).resolves.toHaveLength(3);
   });
 
   it('normalizes founder registration requests before the adapter boundary', async () => {

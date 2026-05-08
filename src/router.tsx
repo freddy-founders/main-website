@@ -1,6 +1,6 @@
 import { type DependencyList, type FormEvent, useEffect, useState } from 'react';
 import { Navigate, Route, Routes } from 'react-router-dom';
-import { listPendingRegistrationRequests } from './application/admin';
+import { listPendingRegistrationRequests, listProfiles, setProfileRole } from './application/admin';
 import { getCurrentSession, sendMagicLink } from './application/auth';
 import { listPublicCompanies } from './application/companies';
 import { listPublicEvents } from './application/events';
@@ -31,7 +31,7 @@ import {
   TextInput,
   Topbar,
 } from './design';
-import type { RegistrationRequest } from './domain/accounts';
+import type { ProfileAccount, RegistrationRequest } from './domain/accounts';
 import type { CompanySummary } from './domain/companies';
 import type { EventRegistrationAction, EventSummary } from './domain/events';
 import type { PersonSummary } from './domain/people';
@@ -461,21 +461,44 @@ function RegisterPage() {
 function AdminPage() {
   const session = useAsyncValue(getCurrentSession, []);
   const role = session?.role ?? null;
+  const [refreshKey, setRefreshKey] = useState(0);
   const requests = useAsyncList<RegistrationRequest>(
     () => listPendingRegistrationRequests(role),
-    [role],
+    [role, refreshKey],
   );
+  const profiles = useAsyncList<ProfileAccount>(() => listProfiles(role), [role, refreshKey]);
+
+  async function handleSetProfileRole(profile: ProfileAccount, nextRole: ProfileAccount['role']) {
+    await setProfileRole(role, {
+      targetProfileId: profile.id,
+      role: nextRole,
+    });
+    setRefreshKey((value) => value + 1);
+  }
+
+  if (role !== 'admin') {
+    return (
+      <PageShell>
+        <Panel title="Admin Maintenance" eyebrow="Admin Only">
+          <Notice>Admin access required. Sign in with an admin account to continue.</Notice>
+        </Panel>
+        <Rail
+          title="Access boundary"
+          copy="Organizers can help operate the community, but the admin page and admin creation are admin-only."
+          stats={[{ value: role ?? 'NONE', label: 'Session role' }]}
+        />
+      </PageShell>
+    );
+  }
 
   return (
     <PageShell>
-      <Panel title="Admin Maintenance" eyebrow="Simple CRUD">
+      <Panel title="Admin Maintenance" eyebrow="Admin Only">
         {session ? (
           <Notice>
             Signed in as {session.email} / {session.role}
           </Notice>
-        ) : (
-          <Notice>Sign in as an organizer or admin to review pending requests.</Notice>
-        )}
+        ) : null}
         <RowList>
           {requests.map((request) => (
             <Row
@@ -490,12 +513,54 @@ function AdminPage() {
           ))}
         </RowList>
       </Panel>
+      <Panel title="People + Roles" eyebrow="Admin Governance">
+        <RowList>
+          {profiles.map((profile) => (
+            <Row
+              key={profile.id}
+              title={profile.name}
+              meta={`${profile.email} / ${profile.role}${profile.isOwner ? ' / owner' : ''}`}
+              actions={
+                <>
+                  {profile.role !== 'organizer' ? (
+                    <Button
+                      type="button"
+                      tone="neutral"
+                      onClick={() => handleSetProfileRole(profile, 'organizer')}
+                    >
+                      Make organizer
+                    </Button>
+                  ) : null}
+                  {profile.role !== 'admin' ? (
+                    <Button type="button" onClick={() => handleSetProfileRole(profile, 'admin')}>
+                      Make admin
+                    </Button>
+                  ) : null}
+                  {!profile.isOwner && profile.role !== 'member' ? (
+                    <Button
+                      type="button"
+                      tone="neutral"
+                      onClick={() => handleSetProfileRole(profile, 'member')}
+                    >
+                      Demote to member
+                    </Button>
+                  ) : null}
+                </>
+              }
+            >
+              {profile.isOwner
+                ? 'Site owner. Owner is a singleton capability on top of admin.'
+                : 'Cumulative role: member < organizer < admin.'}
+            </Row>
+          ))}
+        </RowList>
+      </Panel>
       <Rail
         title="Maintenance only"
-        copy="Admin should stay focused on Events, People, Companies, and pending founder/company registrations. No dashboard sprawl."
+        copy="Admin is the only role that can create admins. Organizers can promote members to organizers through the backend role boundary, not this admin-only page."
         stats={[
           { value: String(requests.length).padStart(2, '0'), label: 'Pending' },
-          { value: role ?? 'NONE', label: 'Session role' },
+          { value: String(profiles.length).padStart(2, '0'), label: 'Profiles' },
         ]}
       />
     </PageShell>

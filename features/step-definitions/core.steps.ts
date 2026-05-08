@@ -1,10 +1,11 @@
 import assert from 'node:assert/strict';
 import { Given, Then, When } from '@cucumber/cucumber';
-import { listPendingRegistrationRequests } from '../../src/application/admin';
+import { listPendingRegistrationRequests, listProfiles } from '../../src/application/admin';
 import { listPublicCompanies } from '../../src/application/companies';
 import { listPublicEvents } from '../../src/application/events';
 import { listPublicPeople } from '../../src/application/people';
 import { createRegistrationRequest } from '../../src/application/registrationRequests';
+import { canPromoteToRole } from '../../src/domain/accounts';
 import type { FreddyWorld } from '../support/world';
 
 Given('public browsing is open', function () {
@@ -122,4 +123,28 @@ Then(
 
 Then('the signup request is rejected', function (this: FreddyWorld) {
   assert.ok(this.registrationError instanceof Error, 'expected registration to fail');
+});
+
+When('an organizer asks for profile governance', async function (this: FreddyWorld) {
+  this.profiles = await listProfiles('organizer');
+});
+
+When('an admin asks for profile governance', async function (this: FreddyWorld) {
+  this.profiles = await listProfiles('admin');
+});
+
+When('an organizer tries to promote a member to admin', function (this: FreddyWorld) {
+  this.roleChangeAllowed = canPromoteToRole('organizer', 'admin');
+});
+
+Then('no profiles are returned', function (this: FreddyWorld) {
+  assert.equal(this.profiles.length, 0);
+});
+
+Then('profiles are returned for admin governance', function (this: FreddyWorld) {
+  assert.ok(this.profiles.length > 0, 'expected admin-visible profiles');
+});
+
+Then('the role change is rejected', function (this: FreddyWorld) {
+  assert.equal(this.roleChangeAllowed, false);
 });

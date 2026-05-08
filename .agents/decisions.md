@@ -305,3 +305,25 @@ Registration is not a generic social signup. It is a founder/company trust reque
 - public directory visibility remains consent-aware and admin-reviewed
 
 Rationale: Freddy Founders membership is company-bound founder context, not anonymous account creation. The company domain is the stable dedupe key for creating/reusing company objects while keeping new records private until reviewed.
+
+## 2026-05-08 — Admin governance uses three cumulative roles plus singleton owner
+
+Freddy Founders accounts are users with exactly three cumulative roles:
+
+```text
+member < organizer < admin
+```
+
+The owner is not a fourth role. Ownership is a singleton site capability stored as an owner profile pointer. The owner must also have `role = admin`, so the owner has admin, organizer, and member capabilities.
+
+Rules:
+
+- `/admin` is admin-only.
+- only admins can promote users to admin.
+- admins can promote/demote users across member/organizer/admin, subject to last-admin and owner invariants.
+- organizers can promote members to organizers through the backend role boundary.
+- users can demote themselves only when that does not violate last-admin/owner invariants.
+- the owner can transfer ownership to another user; the previous owner remains an admin.
+- first-owner bootstrap is explicit/manual by profile email for v0.
+
+Rationale: this keeps the user-facing role ladder simple while enforcing the single-owner invariant separately from ordinary role assignment.

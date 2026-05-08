@@ -1,6 +1,30 @@
 import { describe, expect, it } from 'vitest';
-import { normalizeCompanyDomain, prepareFounderRegistrationRequest } from './accounts';
+import {
+  canAccessAdmin,
+  canPromoteToRole,
+  normalizeCompanyDomain,
+  prepareFounderRegistrationRequest,
+} from './accounts';
 
+describe('role governance', () => {
+  it('gates the admin page to admins only', () => {
+    expect(canAccessAdmin(null)).toBe(false);
+    expect(canAccessAdmin('member')).toBe(false);
+    expect(canAccessAdmin('organizer')).toBe(false);
+    expect(canAccessAdmin('admin')).toBe(true);
+  });
+
+  it('allows only admins to create admins', () => {
+    expect(canPromoteToRole('admin', 'admin')).toBe(true);
+    expect(canPromoteToRole('organizer', 'admin')).toBe(false);
+    expect(canPromoteToRole('member', 'admin')).toBe(false);
+  });
+
+  it('allows organizers to promote members to organizers', () => {
+    expect(canPromoteToRole('organizer', 'organizer')).toBe(true);
+    expect(canPromoteToRole('member', 'organizer')).toBe(false);
+  });
+});
 describe('founder registration domain rules', () => {
   it('normalizes company websites to canonical domains', () => {
     expect(normalizeCompanyDomain('https://www.example.com/path')).toBe('example.com');

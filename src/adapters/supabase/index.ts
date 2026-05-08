@@ -5,6 +5,7 @@ import { SupabaseCompanyRepository } from './companyRepository';
 import type { Database } from './database.types';
 import { SupabaseEventRepository } from './eventRepository';
 import { SupabasePersonRepository } from './personRepository';
+import { SupabaseProfileRepository } from './profileRepository';
 import { SupabaseRegistrationRequestRepository } from './registrationRequestRepository';
 
 export function createSupabaseAdapters(client: SupabaseClient<Database>) {
@@ -14,5 +15,6 @@ export function createSupabaseAdapters(client: SupabaseClient<Database>) {
     people: new SupabasePersonRepository(client),
     companies: new SupabaseCompanyRepository(client),
     registrationRequests: new SupabaseRegistrationRequestRepository(client),
+    profiles: new SupabaseProfileRepository(client),
   };
 }

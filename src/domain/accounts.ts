@@ -1,8 +1,46 @@
-export type AccountRole = 'visitor' | 'member' | 'organizer' | 'admin';
+export type AccountRole = 'member' | 'organizer' | 'admin';
 export type RegistrationRequestStatus = 'pending' | 'approved' | 'rejected';
 
+export function normalizeAccountRole(role: string | null | undefined): AccountRole {
+  if (role === 'admin' || role === 'organizer') {
+    return role;
+  }
+
+  return 'member';
+}
+
 export function canAccessAdmin(role: AccountRole | null): boolean {
-  return role === 'admin' || role === 'organizer';
+  return role === 'admin';
+}
+
+export function canPromoteToRole(actorRole: AccountRole | null, targetRole: AccountRole): boolean {
+  if (targetRole === 'admin') {
+    return actorRole === 'admin';
+  }
+
+  if (targetRole === 'organizer') {
+    return actorRole === 'admin' || actorRole === 'organizer';
+  }
+
+  return false;
+}
+
+export interface ProfileAccount {
+  id: string;
+  email: string;
+  name: string;
+  role: AccountRole;
+  isOwner: boolean;
+  createdAt: string;
+}
+
+export interface SetProfileRoleInput {
+  targetProfileId: string;
+  role: AccountRole;
+}
+
+export interface TransferOwnershipInput {
+  targetProfileId: string;
 }
 
 export interface RegistrationRequestInput {

@@ -1,6 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { AuthPort, AuthSession } from '../../ports/auth';
 import type { Database } from './database.types';
+import { normalizeAccountRole } from '../../domain/accounts';
 
 export class SupabaseAuthPort implements AuthPort {
   constructor(private readonly client: SupabaseClient<Database>) {}
@@ -31,7 +32,7 @@ export class SupabaseAuthPort implements AuthPort {
     return {
       userId: session.user.id,
       email: session.user.email,
-      role: profile?.role ?? 'member',
+      role: normalizeAccountRole(profile?.role),
     };
   }
 

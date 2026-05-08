@@ -281,6 +281,51 @@ export type Database = {
         };
         Relationships: [];
       };
+      profile_role_audit: {
+        Row: {
+          actor_profile_id: string | null;
+          created_at: string;
+          id: string;
+          next_role: Database['public']['Enums']['account_role'];
+          previous_role: Database['public']['Enums']['account_role'];
+          reason: string | null;
+          target_profile_id: string;
+        };
+        Insert: {
+          actor_profile_id?: string | null;
+          created_at?: string;
+          id?: string;
+          next_role: Database['public']['Enums']['account_role'];
+          previous_role: Database['public']['Enums']['account_role'];
+          reason?: string | null;
+          target_profile_id: string;
+        };
+        Update: {
+          actor_profile_id?: string | null;
+          created_at?: string;
+          id?: string;
+          next_role?: Database['public']['Enums']['account_role'];
+          previous_role?: Database['public']['Enums']['account_role'];
+          reason?: string | null;
+          target_profile_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'profile_role_audit_actor_profile_id_fkey';
+            columns: ['actor_profile_id'];
+            isOneToOne: false;
+            referencedRelation: 'profiles';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'profile_role_audit_target_profile_id_fkey';
+            columns: ['target_profile_id'];
+            isOneToOne: false;
+            referencedRelation: 'profiles';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
       registration_requests: {
         Row: {
           company_name: string | null;
@@ -343,12 +388,52 @@ export type Database = {
           },
         ];
       };
+      site_settings: {
+        Row: {
+          created_at: string;
+          id: boolean;
+          owner_profile_id: string | null;
+          updated_at: string;
+        };
+        Insert: {
+          created_at?: string;
+          id?: boolean;
+          owner_profile_id?: string | null;
+          updated_at?: string;
+        };
+        Update: {
+          created_at?: string;
+          id?: boolean;
+          owner_profile_id?: string | null;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'site_settings_owner_profile_id_fkey';
+            columns: ['owner_profile_id'];
+            isOneToOne: false;
+            referencedRelation: 'profiles';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
     };
     Views: {
       [_ in never]: never;
     };
     Functions: {
+      admin_bootstrap_owner: { Args: { owner_email: string }; Returns: string };
+      current_profile_is_owner: { Args: never; Returns: boolean };
+      is_admin: { Args: never; Returns: boolean };
       is_admin_or_organizer: { Args: never; Returns: boolean };
+      set_profile_role: {
+        Args: {
+          target_profile_id: string;
+          next_role: Database['public']['Enums']['account_role'];
+          reason?: string | null;
+        };
+        Returns: undefined;
+      };
       submit_founder_registration_request: {
         Args: {
           request_name: string;
@@ -363,6 +448,12 @@ export type Database = {
           request_is_company_founder: boolean;
         };
         Returns: string;
+      };
+      transfer_site_owner: {
+        Args: {
+          target_profile_id: string;
+        };
+        Returns: undefined;
       };
     };
     Enums: {
