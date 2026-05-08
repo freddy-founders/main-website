@@ -329,8 +329,13 @@ function LoginPage() {
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setStatus('Sending magic link...');
-    await sendMagicLink(email, `${window.location.origin}/admin`);
-    setStatus('Check your email for the Freddy Founders login link.');
+
+    try {
+      await sendMagicLink(email, `${window.location.origin}/admin`);
+      setStatus('Check your email for the Freddy Founders login link.');
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : 'Could not send login link.');
+    }
   }
 
   return (
@@ -367,24 +372,30 @@ function RegisterPage() {
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const form = new FormData(event.currentTarget);
+    const formElement = event.currentTarget;
+    const form = new FormData(formElement);
     setStatus('Submitting founder/company request...');
-    await createRegistrationRequest({
-      name: String(form.get('name') ?? ''),
-      email: String(form.get('email') ?? ''),
-      companyName: String(form.get('company-name') ?? ''),
-      companyWebsiteUrl: String(form.get('company-website-url') ?? ''),
-      role: String(form.get('role') ?? ''),
-      founderContext: String(form.get('founder-context') ?? ''),
-      topics: String(form.get('topics') ?? '')
-        .split(',')
-        .map((topic) => topic.trim())
-        .filter(Boolean),
-      publicDirectoryConsent: form.get('public-directory-consent') === 'on',
-      isCompanyFounder: form.get('is-company-founder') === 'on',
-    });
-    event.currentTarget.reset();
-    setStatus('Request received. Organizers will review the company and founder claim.');
+
+    try {
+      await createRegistrationRequest({
+        name: String(form.get('name') ?? ''),
+        email: String(form.get('email') ?? ''),
+        companyName: String(form.get('company-name') ?? ''),
+        companyWebsiteUrl: String(form.get('company-website-url') ?? ''),
+        role: String(form.get('role') ?? ''),
+        founderContext: String(form.get('founder-context') ?? ''),
+        topics: String(form.get('topics') ?? '')
+          .split(',')
+          .map((topic) => topic.trim())
+          .filter(Boolean),
+        publicDirectoryConsent: form.get('public-directory-consent') === 'on',
+        isCompanyFounder: form.get('is-company-founder') === 'on',
+      });
+      formElement.reset();
+      setStatus('Request received. Organizers will review the company and founder claim.');
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : 'Could not submit registration request.');
+    }
   }
 
   return (
