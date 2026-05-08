@@ -1,0 +1,2060 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Freddy Founders Nine-Page Site Mock</title>
+    <style>
+      :root {
+        --paper: #f0eee7;
+        --paper-2: #e3dbd2;
+        --paper-3: #fffaf1;
+        --ink: #050505;
+        --muted: #5f5f55;
+        --shell: #d8d1c8;
+        --accent: #9f2d20;
+        --accent-soft: #f0c9bf;
+        --ok: #316b3f;
+        --warn: #8b5e00;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        min-height: 100%;
+      }
+      body {
+        margin: 0;
+        background: var(--shell);
+        color: var(--ink);
+        font-family: Arial, Helvetica, sans-serif;
+        letter-spacing: -0.01em;
+      }
+      body::before {
+        content: '';
+        position: fixed;
+        inset: 0;
+        pointer-events: none;
+        opacity: 0.09;
+        background-image:
+          linear-gradient(rgba(0, 0, 0, 0.09) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(0, 0, 0, 0.07) 1px, transparent 1px);
+        background-size: 18px 18px;
+        mix-blend-mode: multiply;
+        z-index: 50;
+      }
+
+      .mono {
+        font-family: 'IBM Plex Mono', 'Courier New', monospace;
+        letter-spacing: 0.052em;
+        text-transform: uppercase;
+      }
+
+      .sidebar {
+        position: fixed;
+        inset: 0 auto 0 0;
+        width: 230px;
+        background: var(--ink);
+        color: var(--paper);
+        border-right: 3px solid var(--accent);
+        overflow-y: auto;
+        z-index: 20;
+      }
+      .sidebar-head {
+        padding: 14px 12px;
+        border-bottom: 1px solid var(--accent);
+      }
+      .sidebar-title {
+        font-size: 19px;
+        line-height: 0.9;
+        font-weight: 950;
+        text-transform: uppercase;
+        letter-spacing: -0.06em;
+      }
+      .sidebar-subtitle {
+        margin-top: 9px;
+        color: #c7c7bd;
+        font-size: 10px;
+        line-height: 1.35;
+      }
+      .screen-group {
+        padding: 10px 0;
+      }
+      .side-label {
+        padding: 8px 12px 5px;
+        color: #8f8f84;
+        font-size: 9px;
+      }
+      .screen-link {
+        width: 100%;
+        display: block;
+        border: 0;
+        border-top: 1px solid rgba(255, 255, 255, 0.16);
+        background: transparent;
+        color: var(--paper);
+        padding: 10px 12px;
+        text-align: left;
+        font:
+          800 11px/1.12 'IBM Plex Mono',
+          'Courier New',
+          monospace;
+        letter-spacing: 0.052em;
+        text-transform: uppercase;
+        cursor: pointer;
+      }
+      .screen-link:hover,
+      .screen-link.active {
+        background: var(--accent);
+        color: #fff;
+      }
+      .screen-link.sub {
+        padding-left: 26px;
+        font-weight: 500;
+        color: #d5d5cb;
+        border-top: 0;
+      }
+      .screen-link small {
+        display: block;
+        margin-top: 4px;
+        color: rgba(255, 255, 255, 0.58);
+        font-size: 9px;
+        letter-spacing: 0.025em;
+        line-height: 1.25;
+      }
+
+      .main {
+        min-height: 100vh;
+        margin-left: 230px;
+        padding: 22px 26px 34px;
+      }
+      .canvas-toolbar {
+        display: grid;
+        grid-template-columns: 1fr auto auto;
+        gap: 14px;
+        align-items: end;
+        border: 2px solid var(--ink);
+        border-bottom: 0;
+        background: var(--paper);
+        padding: 12px;
+        max-width: 1240px;
+        margin: 0 auto;
+      }
+      .canvas-title {
+        font-size: clamp(36px, 5.2vw, 76px);
+        line-height: 0.82;
+        font-weight: 950;
+        letter-spacing: -0.065em;
+        text-transform: uppercase;
+      }
+      .canvas-note {
+        margin-top: 8px;
+        color: var(--muted);
+        font-size: 10px;
+      }
+      .device-controls {
+        display: flex;
+        border: 2px solid var(--ink);
+        background: var(--ink);
+        gap: 1px;
+        align-self: stretch;
+      }
+      .device-btn {
+        border: 0;
+        background: var(--paper);
+        color: var(--ink);
+        min-width: 92px;
+        padding: 10px 12px;
+        font-size: 11px;
+        cursor: pointer;
+      }
+      .device-btn.active {
+        background: var(--accent);
+        color: #fff;
+      }
+      .spec-link {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border: 2px solid var(--ink);
+        background: var(--accent);
+        color: #fff;
+        padding: 10px 12px;
+        min-width: 118px;
+        text-decoration: none;
+        font-size: 11px;
+        align-self: stretch;
+      }
+      .stage {
+        max-width: 1240px;
+        margin: 0 auto;
+        border: 2px solid var(--ink);
+        background: var(--paper-2);
+        min-height: 780px;
+        padding: 18px;
+        display: grid;
+        place-items: start center;
+        overflow-x: auto;
+      }
+      .desktop-frame,
+      .mobile-frame {
+        background: var(--ink);
+        padding: 3px;
+        width: 100%;
+      }
+      .desktop-frame {
+        max-width: 1160px;
+        height: 730px;
+      }
+      .mobile-frame {
+        width: 390px;
+        height: 844px;
+      }
+      .desktop-screen,
+      .mobile-screen {
+        height: 100%;
+        width: 100%;
+        overflow: auto;
+        background: var(--paper);
+        color: var(--ink);
+      }
+
+      .surface {
+        background: var(--paper);
+        color: var(--ink);
+        min-height: 100%;
+      }
+      .topbar {
+        display: grid;
+        grid-template-columns: auto 1fr auto;
+        align-items: stretch;
+        background: var(--accent);
+        color: #fff;
+        border-bottom: 3px solid var(--ink);
+      }
+      .mark {
+        display: grid;
+        place-items: center;
+        width: 44px;
+        border-right: 2px solid var(--ink);
+        font-weight: 950;
+        font-size: 26px;
+        line-height: 1;
+      }
+      .top-main {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 8px 10px;
+        min-width: 0;
+        overflow: hidden;
+      }
+      .brand {
+        color: #fff;
+        font-size: 13px;
+        font-weight: 950;
+        white-space: nowrap;
+      }
+      .nav {
+        display: flex;
+        gap: 8px;
+        min-width: 0;
+        overflow: hidden;
+        white-space: nowrap;
+        color: #f8ded8;
+        font-size: 10px;
+      }
+      .nav span::before {
+        content: '/';
+        margin-right: 8px;
+        color: var(--accent-soft);
+      }
+      .login-link,
+      .admin-link {
+        background: #fff;
+        color: var(--accent);
+        border-left: 2px solid var(--ink);
+        padding: 10px 14px;
+        white-space: nowrap;
+        font-size: 10px;
+        font-weight: 950;
+      }
+      .auth-links {
+        display: flex;
+        align-items: stretch;
+        background: #fff;
+        border-left: 2px solid var(--ink);
+      }
+      .auth-links span {
+        display: flex;
+        align-items: center;
+        padding: 10px 12px;
+        color: var(--accent);
+        border-left: 1px solid var(--ink);
+        white-space: nowrap;
+        font-size: 10px;
+        font-weight: 950;
+      }
+      .auth-links span:first-child {
+        border-left: 0;
+      }
+      .admin-link {
+        background: var(--ink);
+        color: #fff;
+      }
+
+      .page-head {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: 12px;
+        border-bottom: 2px solid var(--ink);
+        background: var(--paper);
+      }
+      .page-title {
+        padding: 14px 14px 12px;
+      }
+      .kicker {
+        color: var(--accent);
+        font-size: 10px;
+      }
+      .h1 {
+        margin-top: 5px;
+        font-size: clamp(44px, 6.8vw, 88px);
+        line-height: 0.82;
+        letter-spacing: -0.075em;
+        font-weight: 950;
+        text-transform: uppercase;
+      }
+      .subcopy {
+        max-width: 680px;
+        margin-top: 8px;
+        color: var(--muted);
+        font-size: 12px;
+        line-height: 1.4;
+      }
+      .head-stats {
+        display: grid;
+        grid-template-columns: repeat(2, 110px);
+        border-left: 2px solid var(--ink);
+        background: var(--paper-2);
+      }
+      .stat {
+        padding: 10px;
+        border-left: 1px solid var(--ink);
+        border-bottom: 1px solid var(--ink);
+      }
+      .stat:nth-child(odd) {
+        border-left: 0;
+      }
+      .stat-num {
+        font-size: 29px;
+        line-height: 0.88;
+        font-weight: 950;
+        letter-spacing: -0.06em;
+      }
+      .stat-label {
+        margin-top: 4px;
+        color: var(--muted);
+        font-size: 9px;
+      }
+
+      .stripe-line {
+        height: 8px;
+        background: repeating-linear-gradient(90deg, var(--accent) 0 14px, var(--paper) 14px 19px);
+        border-top: 2px solid var(--ink);
+        border-bottom: 2px solid var(--ink);
+      }
+      .grid-2 {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 310px;
+        min-height: calc(730px - 43px - 132px);
+      }
+      .grid-public {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 310px;
+        min-height: calc(730px - 43px - 12px);
+      }
+      .detail-single {
+        min-height: calc(730px - 43px - 12px);
+      }
+      .grid-even {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        min-height: calc(730px - 43px - 132px);
+      }
+      .grid-admin {
+        display: grid;
+        grid-template-columns: 290px minmax(0, 1fr) 310px;
+        min-height: calc(730px - 43px - 132px);
+      }
+      .single {
+        min-height: calc(730px - 43px - 132px);
+      }
+      .panel {
+        border-right: 2px solid var(--ink);
+        min-width: 0;
+      }
+      .panel:last-child {
+        border-right: 0;
+      }
+      .panel-stack {
+        border-left: 2px solid var(--ink);
+      }
+      .panel-stack .panel {
+        border-right: 0;
+        border-bottom: 2px solid var(--ink);
+      }
+      .panel-stack .panel:last-child {
+        border-bottom: 0;
+      }
+      .panel-head {
+        padding: 8px 9px;
+        background: var(--ink);
+        color: #fff;
+        border-bottom: 2px solid var(--ink);
+        display: flex;
+        justify-content: space-between;
+        gap: 8px;
+        font-size: 10px;
+      }
+      .panel-head.accent {
+        background: var(--accent);
+      }
+      .panel-body {
+        padding: 9px;
+      }
+
+      .event-list,
+      .person-list,
+      .admin-list {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+      }
+      .event-row {
+        display: grid;
+        grid-template-columns: 90px minmax(0, 1fr) auto;
+        gap: 10px;
+        border-bottom: 1px solid var(--ink);
+        padding: 10px 0;
+      }
+      .event-row:first-child {
+        padding-top: 0;
+      }
+      .datebox {
+        color: var(--accent);
+        font-weight: 950;
+        font-size: 11px;
+        line-height: 1.12;
+      }
+      .row-title {
+        font-size: 14px;
+        line-height: 1.18;
+        font-weight: 900;
+        letter-spacing: -0.015em;
+        text-transform: uppercase;
+      }
+      .row-meta,
+      .tiny,
+      .meta {
+        color: var(--muted);
+        font-size: 9px;
+        line-height: 1.35;
+      }
+      .row-copy {
+        margin-top: 4px;
+        color: #262622;
+        font-size: 11px;
+        line-height: 1.35;
+      }
+      .actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 5px;
+        align-content: start;
+        justify-content: flex-end;
+      }
+      .btn {
+        display: inline-block;
+        border: 1px solid var(--ink);
+        background: var(--paper);
+        color: var(--ink);
+        padding: 6px 7px;
+        text-decoration: none;
+        font-size: 9px;
+        font-weight: 950;
+        white-space: nowrap;
+      }
+      .btn.primary {
+        background: var(--accent);
+        color: #fff;
+      }
+      .btn.ok {
+        background: var(--ok);
+        color: #fff;
+      }
+      .tag {
+        display: inline-block;
+        border: 1px solid var(--ink);
+        padding: 2px 4px;
+        margin: 4px 3px 0 0;
+        color: var(--ink);
+        background: var(--paper-2);
+        font-size: 9px;
+      }
+      .tag.accent {
+        background: var(--accent);
+        color: #fff;
+      }
+      .tag.ok {
+        background: #d9ecd8;
+        color: var(--ok);
+      }
+      .tag.warn {
+        background: #f3e0ae;
+        color: #6b4500;
+      }
+
+      .filterbar {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        padding: 8px;
+        border: 1px solid var(--ink);
+        background: var(--paper-2);
+        margin-bottom: 9px;
+      }
+      .search {
+        flex: 1 1 220px;
+        border: 1px solid var(--ink);
+        padding: 8px;
+        background: #fffef7;
+        color: var(--ink);
+        font:
+          10px/1.2 'IBM Plex Mono',
+          'Courier New',
+          monospace;
+        text-transform: uppercase;
+      }
+      .chip {
+        border: 1px solid var(--ink);
+        background: var(--paper);
+        padding: 7px 8px;
+        font-size: 9px;
+      }
+      .chip.active {
+        background: var(--accent);
+        color: #fff;
+      }
+
+      .reddit-card {
+        border-bottom: 2px solid var(--ink);
+        background: var(--paper);
+      }
+      .reddit-card:last-child {
+        border-bottom: 0;
+      }
+      .reddit-card .panel-head {
+        border-bottom: 1px solid var(--ink);
+      }
+      .sidebar-copy {
+        padding: 10px;
+        color: var(--muted);
+        font-size: 12px;
+        line-height: 1.45;
+      }
+      .sidebar-row {
+        display: flex;
+        gap: 8px;
+        align-items: flex-start;
+        padding: 8px 10px;
+        border-top: 1px solid rgba(0, 0, 0, 0.18);
+        font-size: 11px;
+        line-height: 1.35;
+      }
+      .sidebar-icon {
+        width: 18px;
+        color: var(--accent);
+        font-weight: 950;
+        text-align: center;
+        flex: 0 0 18px;
+      }
+      .sidebar-stat-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        border-top: 1px solid var(--ink);
+        border-bottom: 1px solid var(--ink);
+      }
+      .sidebar-stat {
+        padding: 10px;
+        border-right: 1px solid var(--ink);
+      }
+      .sidebar-stat:last-child {
+        border-right: 0;
+      }
+      .sidebar-stat strong {
+        display: block;
+        font-size: 18px;
+        line-height: 1;
+        color: var(--ink);
+      }
+      .bookmark {
+        display: block;
+        margin: 8px 10px;
+        padding: 9px 10px;
+        border: 1px solid var(--ink);
+        border-radius: 999px;
+        background: #203438;
+        color: #fff;
+        text-align: center;
+        text-decoration: none;
+        font-size: 10px;
+        font-weight: 950;
+      }
+      .rule-row {
+        display: grid;
+        grid-template-columns: 28px 1fr auto;
+        gap: 8px;
+        align-items: start;
+        padding: 9px 10px;
+        border-top: 1px solid rgba(0, 0, 0, 0.18);
+        color: var(--muted);
+        font-size: 12px;
+        line-height: 1.35;
+      }
+      .rule-num {
+        color: var(--muted);
+        text-align: right;
+      }
+      .chev {
+        color: var(--ink);
+        font-weight: 950;
+      }
+
+      .sidebar-hero {
+        padding: 10px;
+      }
+      .sidebar-kicker {
+        color: var(--accent);
+        font-size: 10px;
+      }
+      .sidebar-title-lg {
+        margin-top: 4px;
+        font-size: 34px;
+        line-height: 0.86;
+        letter-spacing: -0.06em;
+        font-weight: 950;
+        text-transform: uppercase;
+      }
+      .sidebar-subcopy {
+        margin-top: 8px;
+        color: var(--muted);
+        font-size: 12px;
+        line-height: 1.42;
+      }
+
+      .person-row {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 10px;
+        border-bottom: 1px solid var(--ink);
+        padding: 10px 0;
+      }
+      .person-row:first-child {
+        padding-top: 0;
+      }
+      .name {
+        font-size: 15px;
+        line-height: 1.1;
+        font-weight: 950;
+        text-transform: uppercase;
+        letter-spacing: -0.02em;
+      }
+      .profile-hero {
+        display: grid;
+        grid-template-columns: 1fr 290px;
+        border-bottom: 2px solid var(--ink);
+      }
+      .profile-main {
+        padding: 16px;
+      }
+      .profile-name {
+        font-size: clamp(48px, 8vw, 96px);
+        line-height: 0.78;
+        letter-spacing: -0.075em;
+        font-weight: 950;
+        text-transform: uppercase;
+      }
+      .facts {
+        border-left: 2px solid var(--ink);
+        background: var(--paper-2);
+      }
+      .fact {
+        padding: 10px;
+        border-bottom: 1px solid var(--ink);
+      }
+      .fact-label {
+        color: var(--muted);
+        font-size: 9px;
+      }
+      .fact-value {
+        margin-top: 4px;
+        font-size: 12px;
+        font-weight: 800;
+      }
+
+      .form-grid {
+        display: grid;
+        gap: 7px;
+      }
+      .field {
+        width: 100%;
+        border: 1px solid var(--ink);
+        background: #fffef7;
+        color: var(--ink);
+        padding: 8px;
+        font:
+          10px/1.35 'IBM Plex Mono',
+          'Courier New',
+          monospace;
+        text-transform: uppercase;
+        letter-spacing: 0.035em;
+      }
+      textarea.field {
+        min-height: 76px;
+        resize: vertical;
+      }
+      .tab-row {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 1px;
+        background: var(--ink);
+        border: 1px solid var(--ink);
+      }
+      .tab {
+        background: var(--paper);
+        padding: 7px 5px;
+        text-align: center;
+        font-size: 9px;
+      }
+      .tab.active {
+        background: var(--accent);
+        color: #fff;
+      }
+      .preview-card {
+        border: 1px solid var(--ink);
+        background: var(--paper-3);
+        padding: 8px;
+      }
+      .warning {
+        border: 1px solid var(--ink);
+        background: #f3e0ae;
+        color: #5c3c00;
+        padding: 7px;
+        font-size: 9px;
+        line-height: 1.35;
+      }
+      .hidden {
+        display: none !important;
+      }
+
+      .mobile-screen .page-head,
+      .mobile-screen .profile-hero {
+        grid-template-columns: 1fr;
+      }
+      .mobile-screen .head-stats,
+      .mobile-screen .facts {
+        border-left: 0;
+        border-top: 2px solid var(--ink);
+        grid-template-columns: repeat(2, 1fr);
+      }
+      .mobile-screen .grid-2,
+      .mobile-screen .grid-public,
+      .mobile-screen .grid-even,
+      .mobile-screen .grid-admin {
+        display: block;
+        min-height: auto;
+      }
+      .mobile-screen .panel,
+      .mobile-screen .panel-stack {
+        border-right: 0;
+        border-left: 0;
+        border-bottom: 2px solid var(--ink);
+      }
+      .mobile-screen .panel:last-child {
+        border-bottom: 0;
+      }
+      .mobile-screen .nav {
+        display: none;
+      }
+      .mobile-screen .brand {
+        font-size: 11px;
+      }
+      .mobile-screen .login-link,
+      .mobile-screen .admin-link {
+        font-size: 9px;
+        padding: 9px 7px;
+      }
+      .mobile-screen .auth-links span {
+        font-size: 8px;
+        padding: 9px 6px;
+      }
+      .mobile-screen .mark {
+        width: 36px;
+        font-size: 21px;
+      }
+      .mobile-screen .h1 {
+        font-size: 48px;
+      }
+      .mobile-screen .event-row {
+        grid-template-columns: 1fr;
+      }
+      .mobile-screen .actions {
+        justify-content: flex-start;
+      }
+      .mobile-screen .person-row {
+        grid-template-columns: 1fr;
+      }
+
+      @media (max-width: 860px) {
+        .sidebar {
+          position: static;
+          width: auto;
+          border-right: 0;
+          border-bottom: 3px solid var(--accent);
+        }
+        .main {
+          margin-left: 0;
+          padding: 14px;
+        }
+        .canvas-toolbar {
+          grid-template-columns: 1fr;
+        }
+        .device-controls,
+        .spec-link {
+          align-self: auto;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <aside class="sidebar">
+      <div class="sidebar-head">
+        <div class="sidebar-title">FREDDY<br />FOUNDERS</div>
+        <div class="sidebar-subtitle mono">
+          BOOKFACE + EVENTS + COMPANIES + AUTH / FREDDY BRICK / NINE-PAGE MOCK
+        </div>
+      </div>
+      <div class="screen-group">
+        <div class="side-label mono">[ PUBLIC ]</div>
+        <button class="screen-link active" data-screen="events">
+          1 EVENTS<small>default public front page</small>
+        </button>
+        <button class="screen-link" data-screen="eventDetail">
+          2 EVENT DETAIL<small>why attend + who to meet</small>
+        </button>
+        <button class="screen-link" data-screen="people">
+          3 PEOPLE<small>Bookface-like directory</small>
+        </button>
+        <button class="screen-link" data-screen="personDetail">
+          4 PERSON DETAIL<small>optional profile-lite view</small>
+        </button>
+        <button class="screen-link" data-screen="companies">
+          5 COMPANIES<small>YC-style company directory</small>
+        </button>
+        <button class="screen-link" data-screen="companyDetail">
+          6 COMPANY DETAIL<small>YC-style company profile</small>
+        </button>
+        <div class="side-label mono">[ AUTH ]</div>
+        <button class="screen-link" data-screen="login">
+          7 LOGIN<small>returning member/admin auth</small>
+        </button>
+        <button class="screen-link" data-screen="registration">
+          8 REGISTRATION<small>request account / join</small>
+        </button>
+        <div class="side-label mono">[ INTERNAL ]</div>
+        <button class="screen-link" data-screen="admin">
+          9 ADMIN MAINTENANCE<small>simple CRUD + visibility</small>
+        </button>
+        <div class="side-label mono">[ DEVICE ]</div>
+        <button class="screen-link sub active" data-device="desktop">↳ DESKTOP / PC</button>
+        <button class="screen-link sub" data-device="mobile">↳ MOBILE</button>
+      </div>
+    </aside>
+
+    <main class="main">
+      <div class="canvas-toolbar">
+        <div>
+          <div class="canvas-title" id="canvasTitle">EVENTS / PC</div>
+          <div class="canvas-note mono" id="canvasNote">
+            Default public front page. Compact HN-like event rows with RSVP/register.
+          </div>
+        </div>
+        <div class="device-controls mono" aria-label="Device controls">
+          <button class="device-btn active" data-device="desktop">DESKTOP</button>
+          <button class="device-btn" data-device="mobile">MOBILE</button>
+        </div>
+        <a class="spec-link mono" href="./community-hub-yc-flow-spec.html" target="_blank"
+          >SPEC / STORIES</a
+        >
+      </div>
+      <div class="stage"><div id="mount" class="desktop-frame"></div></div>
+    </main>
+
+    <div id="templates" class="hidden">
+      <template id="topbar-public">
+        <header class="topbar">
+          <div class="mark">F</div>
+          <div class="top-main">
+            <div class="brand mono">FREDDY FOUNDERS</div>
+            <nav class="nav mono"><span>events</span><span>people</span><span>companies</span></nav>
+          </div>
+          <div class="auth-links mono"><span>LOGIN</span><span>REGISTER</span></div>
+        </header>
+      </template>
+      <template id="topbar-admin">
+        <header class="topbar">
+          <div class="mark">F</div>
+          <div class="top-main">
+            <div class="brand mono">FREDDY FOUNDERS</div>
+            <nav class="nav mono">
+              <span>events</span><span>people</span><span>companies</span><span>admin</span>
+            </nav>
+          </div>
+          <div class="admin-link mono">ADMIN / JL</div>
+        </header>
+      </template>
+
+      <template id="screen-events">
+        <div class="surface">
+          <div data-topbar="public"></div>
+          <div class="stripe-line"></div>
+          <section class="grid-public">
+            <main class="panel">
+              <div class="panel-head accent mono">
+                <span>[ UPCOMING EVENTS ]</span><span>DEFAULT LIST</span>
+              </div>
+              <div class="panel-body">
+                <ul class="event-list">
+                  <li class="event-row">
+                    <div class="datebox mono">JUN 13<br />THU<br />18:30</div>
+                    <div>
+                      <div class="row-title">
+                        June Operator Dinner: AI workflows in local services
+                      </div>
+                      <div class="row-meta mono">
+                        FREDERICTON / HOST: JEREMY / OPEN / 3 PEOPLE TO MEET
+                      </div>
+                      <div class="row-copy">
+                        Small dinner for founders and operators building repeatable sales, service
+                        delivery, and AI-assisted workflows.
+                      </div>
+                      <span class="tag ok mono">OPEN</span
+                      ><span class="tag mono">GOOD FIRST EVENT</span
+                      ><span class="tag mono">HOST + 2 RELEVANT PEOPLE</span>
+                    </div>
+                    <div class="actions mono">
+                      <a class="btn primary">RSVP</a><a class="btn">DETAILS</a>
+                    </div>
+                  </li>
+                  <li class="event-row">
+                    <div class="datebox mono">JUN 26<br />WED<br />12:00</div>
+                    <div>
+                      <div class="row-title">Hiring first sales: founder office hours</div>
+                      <div class="row-meta mono">
+                        ZOOM / HOST: MAYA SINGH / OPEN / 2 PEOPLE TO MEET
+                      </div>
+                      <div class="row-copy">
+                        Peer session for founders moving from founder-led sales into first sales
+                        hire systems and expectations.
+                      </div>
+                      <span class="tag ok mono">OPEN</span><span class="tag mono">REMOTE</span
+                      ><span class="tag mono">SALES SYSTEMS</span>
+                    </div>
+                    <div class="actions mono">
+                      <a class="btn primary">REGISTER</a><a class="btn">DETAILS</a>
+                    </div>
+                  </li>
+                  <li class="event-row">
+                    <div class="datebox mono">JUL 09<br />TUE<br />08:30</div>
+                    <div>
+                      <div class="row-title">Founder breakfast: pricing and unit economics</div>
+                      <div class="row-meta mono">
+                        FREDERICTON / HOST: AMELIA LEBLANC / FULL / WAITLIST
+                      </div>
+                      <div class="row-copy">
+                        Small breakfast for founders comparing pricing models, margins, and finance
+                        operating rhythms.
+                      </div>
+                      <span class="tag warn mono">FULL</span
+                      ><span class="tag mono">FINANCE OPS</span>
+                    </div>
+                    <div class="actions mono">
+                      <a class="btn">WAITLIST</a><a class="btn">DETAILS</a>
+                    </div>
+                  </li>
+                </ul>
+                <div class="panel-head mono" style="margin: 14px -9px 8px">
+                  <span>[ PAST ]</span><span>ARCHIVE</span>
+                </div>
+                <ul class="event-list">
+                  <li class="event-row">
+                    <div class="datebox mono">MAY 22<br />THU</div>
+                    <div>
+                      <div class="row-title">Local services operator roundtable</div>
+                      <div class="row-meta mono">PAST / FREDERICTON / ARCHIVED</div>
+                    </div>
+                    <div class="actions mono"><span class="tag">PAST</span></div>
+                  </li>
+                </ul>
+              </div>
+            </main>
+            <aside class="panel-stack">
+              <section class="panel reddit-card">
+                <div class="panel-head mono"><span>[ EVENTS ]</span><span>SPEC</span></div>
+                <div class="sidebar-hero">
+                  <div class="sidebar-kicker mono">FREDERICTON / FOUNDERS / OPERATORS</div>
+                  <div class="sidebar-title-lg">Events</div>
+                  <div class="sidebar-subcopy mono">
+                    Upcoming Freddy Founders events. Plain rows, useful metadata, RSVP/register
+                    first. No feed, no comments, no ranking.
+                  </div>
+                </div>
+                <div class="sidebar-row mono">
+                  <span class="sidebar-icon">▣</span><span>Default public front page</span>
+                </div>
+                <div class="sidebar-row mono">
+                  <span class="sidebar-icon">◎</span><span>Public / no login needed</span>
+                </div>
+                <div class="sidebar-stat-grid mono">
+                  <div class="sidebar-stat"><strong>03</strong><span>Upcoming events</span></div>
+                  <div class="sidebar-stat"><strong>42</strong><span>Public people</span></div>
+                </div>
+              </section>
+              <section class="panel reddit-card">
+                <div class="panel-head mono"><span>[ FILTERS ]</span><span>EVENTS</span></div>
+                <div class="panel-body mono">
+                  <span class="chip active">UPCOMING</span>
+                  <span class="chip">OPEN</span>
+                  <span class="chip">IN PERSON</span>
+                  <span class="chip">REMOTE</span>
+                  <span class="chip">PAST</span>
+                </div>
+              </section>
+              <section class="panel reddit-card">
+                <div class="panel-head mono">
+                  <span>[ ROWS SHOW ]</span><span>EVENT FIELDS</span>
+                </div>
+                <div class="sidebar-row mono">
+                  <span class="sidebar-icon">1</span
+                  ><span>Date/time, location or format, host, and status.</span>
+                </div>
+                <div class="sidebar-row mono">
+                  <span class="sidebar-icon">2</span
+                  ><span>One-line fit/context plus RSVP/Register action.</span>
+                </div>
+                <div class="sidebar-row mono">
+                  <span class="sidebar-icon">3</span
+                  ><span>Details link only when extra context is useful.</span>
+                </div>
+              </section>
+              <section class="panel reddit-card">
+                <div class="panel-head mono">
+                  <span>[ BOUNDARIES ]</span><span>NOT A FEED</span>
+                </div>
+                <div class="sidebar-row mono">
+                  <span class="sidebar-icon">×</span
+                  ><span>No comments, voting, ranking, or forum posts.</span>
+                </div>
+                <div class="sidebar-row mono">
+                  <span class="sidebar-icon">×</span
+                  ><span>No payment/ticketing flow in this MVP.</span>
+                </div>
+                <div class="sidebar-row mono">
+                  <span class="sidebar-icon">✓</span
+                  ><span>Public page should answer what is next and how to RSVP.</span>
+                </div>
+              </section>
+            </aside>
+          </section>
+        </div>
+      </template>
+
+      <template id="screen-eventDetail">
+        <div class="surface">
+          <div data-topbar="public"></div>
+          <div class="stripe-line"></div>
+          <section class="grid-public">
+            <main class="panel">
+              <div class="panel-head accent mono">
+                <span>[ WHY ATTEND ]</span><span>SHORT PRACTICAL CONTEXT</span>
+              </div>
+              <div class="panel-body">
+                <div class="preview-card">
+                  <div class="row-title">AI workflows in local services</div>
+                  <div class="row-meta mono">
+                    FREDERICTON / PRIVATE ROOM TBD / HOST: JEREMY LEGERE
+                  </div>
+                  <p class="row-copy">
+                    A small dinner for founders and operators building repeatable sales, service
+                    delivery, and AI-assisted workflows. Good fit if you are actively trying to move
+                    from ad hoc founder execution into repeatable operating systems.
+                  </p>
+                  <div class="actions mono" style="justify-content: flex-start; margin-top: 8px">
+                    <a class="btn primary">RSVP / REGISTER</a><a class="btn">BACK TO EVENTS</a>
+                  </div>
+                </div>
+                <div class="panel-head mono" style="margin: 14px -9px 8px">
+                  <span>[ FIT / EXPECTATIONS ]</span><span>NO MARKETING COPY</span>
+                </div>
+                <div class="event-row" style="grid-template-columns: 1fr">
+                  <div>
+                    <div class="row-title">Who should attend</div>
+                    <div class="row-copy">
+                      Founders, GMs, technical operators, and service-business leaders working on
+                      sales systems, delivery workflows, or practical AI adoption.
+                    </div>
+                  </div>
+                </div>
+                <div class="event-row" style="grid-template-columns: 1fr">
+                  <div>
+                    <div class="row-title">What happens there</div>
+                    <div class="row-copy">
+                      Dinner, short host framing, then direct peer discussion. No panel, no pitch
+                      format, no public Q&A thread.
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </main>
+            <aside class="panel-stack">
+              <section class="panel reddit-card">
+                <div class="panel-head mono"><span>[ EVENT ]</span><span>DETAIL</span></div>
+                <div class="sidebar-hero">
+                  <div class="sidebar-kicker mono">OPTIONAL CONTEXT PAGE</div>
+                  <div class="sidebar-title-lg">June Operator Dinner</div>
+                  <div class="sidebar-subcopy mono">
+                    Why attend, who it is for, and who you might meet before you RSVP.
+                  </div>
+                </div>
+                <div class="sidebar-row mono">
+                  <span class="sidebar-icon">◷</span><span>Thu Jun 13 / 18:30 / Fredericton</span>
+                </div>
+                <div class="sidebar-row mono">
+                  <span class="sidebar-icon">◎</span><span>Open / public event detail</span>
+                </div>
+                <div class="sidebar-stat-grid mono">
+                  <div class="sidebar-stat"><strong>21</strong><span>RSVPs</span></div>
+                  <div class="sidebar-stat"><strong>03</strong><span>People to meet</span></div>
+                </div>
+              </section>
+              <section class="panel reddit-card">
+                <div class="panel-head accent mono">
+                  <span>[ PEOPLE TO MEET ]</span><span>EVENT-SPECIFIC</span>
+                </div>
+                <div class="panel-body">
+                  <div class="person-row">
+                    <div>
+                      <div class="name">Maya Singh</div>
+                      <div class="meta mono">B2B GROWTH / SALES SYSTEMS</div>
+                      <div class="row-copy">
+                        Good to ask about follow-up systems and first sales-hire readiness.
+                      </div>
+                      <span class="tag accent mono">GOOD TO ASK ABOUT SALES</span>
+                    </div>
+                    <a class="btn mono">VIEW</a>
+                  </div>
+                  <div class="person-row">
+                    <div>
+                      <div class="name">Amelia LeBlanc</div>
+                      <div class="meta mono">FRACTIONAL CFO / UNIT ECONOMICS</div>
+                      <div class="row-copy">
+                        Featured attendee for pricing and margin benchmark questions.
+                      </div>
+                      <span class="tag mono">FEATURED</span>
+                    </div>
+                    <a class="btn mono">VIEW</a>
+                  </div>
+                  <div class="person-row">
+                    <div>
+                      <div class="name">Jeremy Legere</div>
+                      <div class="meta mono">HOST / AGENT MAPLE</div>
+                      <div class="row-copy">
+                        Host. Ask about AI workflows and construction/service operations.
+                      </div>
+                      <span class="tag ok mono">HOST</span>
+                    </div>
+                    <a class="btn mono">VIEW</a>
+                  </div>
+                </div>
+              </section>
+              <section class="panel reddit-card">
+                <div class="panel-head mono">
+                  <span>[ PRIVACY RULE ]</span><span>PUBLIC-SAFE ONLY</span>
+                </div>
+                <div class="panel-body">
+                  <div class="warning mono">
+                    Only people approved for event-specific public display appear here. Private or
+                    uncertain attendance is hidden.
+                  </div>
+                </div>
+              </section>
+            </aside>
+          </section>
+        </div>
+      </template>
+
+      <template id="screen-people">
+        <div class="surface">
+          <div data-topbar="public"></div>
+          <div class="stripe-line"></div>
+          <section class="grid-public">
+            <main class="panel">
+              <div class="panel-head accent mono">
+                <span>[ DIRECTORY ]</span><span>PUBLIC-SAFE ROWS</span>
+              </div>
+              <div class="panel-body">
+                <div class="filterbar mono">
+                  <input class="search" value="SEARCH PEOPLE, COMPANY, TOPIC" />
+                </div>
+                <ul class="person-list">
+                  <li class="person-row">
+                    <div>
+                      <div class="name">Maya Singh</div>
+                      <div class="meta mono">B2B GROWTH OPERATOR / FREDERICTON</div>
+                      <div class="row-copy">
+                        Useful for founder-led sales, follow-up systems, and first sales-hire
+                        readiness.
+                      </div>
+                      <span class="tag mono">SALES SYSTEMS</span
+                      ><span class="tag mono">ATTENDING JUN 13</span
+                      ><span class="tag ok mono">PUBLIC</span>
+                    </div>
+                    <div class="actions mono"><a class="btn">VIEW MORE</a></div>
+                  </li>
+                  <li class="person-row">
+                    <div>
+                      <div class="name">Amelia LeBlanc</div>
+                      <div class="meta mono">FRACTIONAL CFO / ATLANTIC CANADA</div>
+                      <div class="row-copy">
+                        Useful for unit economics, pricing, finance operating cadence, and margin
+                        benchmarks.
+                      </div>
+                      <span class="tag mono">FINANCE OPS</span
+                      ><span class="tag mono">RELATED: JUL 09</span
+                      ><span class="tag ok mono">PUBLIC</span>
+                    </div>
+                    <div class="actions mono"><a class="btn">VIEW MORE</a></div>
+                  </li>
+                  <li class="person-row">
+                    <div>
+                      <div class="name">Noah Patel</div>
+                      <div class="meta mono">FINTECH FOUNDER / REMOTE</div>
+                      <div class="row-copy">
+                        Limited public context. Useful for first sales hire conversations when
+                        consent allows.
+                      </div>
+                      <span class="tag mono">HIRING</span
+                      ><span class="tag warn mono">LIMITED PUBLIC</span>
+                    </div>
+                    <div class="actions mono"><a class="btn">EXPAND</a></div>
+                  </li>
+                  <li class="person-row">
+                    <div>
+                      <div class="name">Claire Martin</div>
+                      <div class="meta mono">SERVICE OPS / MONCTON</div>
+                      <div class="row-copy">
+                        Useful for service delivery workflows, team handoffs, and operational
+                        templates.
+                      </div>
+                      <span class="tag mono">LOCAL SERVICES</span
+                      ><span class="tag mono">AI OPS</span><span class="tag ok mono">PUBLIC</span>
+                    </div>
+                    <div class="actions mono"><a class="btn">VIEW MORE</a></div>
+                  </li>
+                </ul>
+              </div>
+            </main>
+            <aside class="panel-stack">
+              <section class="panel reddit-card">
+                <div class="panel-head mono"><span>[ PEOPLE ]</span><span>SPEC</span></div>
+                <div class="sidebar-hero">
+                  <div class="sidebar-kicker mono">BOOKFACE-LIKE / PUBLIC-SAFE DIRECTORY</div>
+                  <div class="sidebar-title-lg">People</div>
+                  <div class="sidebar-subcopy mono">
+                    A concise index of people in and around Freddy Founders. Search by role,
+                    company, expertise, location, or event relevance.
+                  </div>
+                </div>
+                <div class="sidebar-row mono">
+                  <span class="sidebar-icon">▣</span><span>Curated directory, not exhaustive</span>
+                </div>
+                <div class="sidebar-stat-grid mono">
+                  <div class="sidebar-stat"><strong>42</strong><span>Public people</span></div>
+                  <div class="sidebar-stat"><strong>18</strong><span>Event links</span></div>
+                </div>
+              </section>
+              <section class="panel reddit-card">
+                <div class="panel-head mono"><span>[ FILTERS ]</span><span>DIRECTORY</span></div>
+                <div class="panel-body mono">
+                  <span class="chip active">ALL</span>
+                  <span class="chip">SALES</span>
+                  <span class="chip">FINANCE</span>
+                  <span class="chip">AI OPS</span>
+                  <span class="chip">ATTENDING JUN 13</span>
+                  <span class="chip">FREDERICTON</span>
+                </div>
+              </section>
+              <section class="panel reddit-card">
+                <div class="panel-head mono">
+                  <span>[ ROWS SHOW ]</span><span>PERSON FIELDS</span>
+                </div>
+                <div class="sidebar-row mono">
+                  <span class="sidebar-icon">1</span
+                  ><span>Name, role/company, location if useful.</span>
+                </div>
+                <div class="sidebar-row mono">
+                  <span class="sidebar-icon">2</span
+                  ><span>Short relevance blurb, topic tags, related events.</span>
+                </div>
+                <div class="sidebar-row mono">
+                  <span class="sidebar-icon">3</span
+                  ><span>Public-safe contact path only when approved.</span>
+                </div>
+              </section>
+              <section class="panel reddit-card">
+                <div class="panel-head mono">
+                  <span>[ BOUNDARIES ]</span><span>PUBLIC-SAFE</span>
+                </div>
+                <div class="sidebar-row mono">
+                  <span class="sidebar-icon">×</span
+                  ><span>No social feed, messaging, follows, or long bios.</span>
+                </div>
+                <div class="sidebar-row mono">
+                  <span class="sidebar-icon">×</span
+                  ><span>No private member exposure or unapproved attendance hints.</span>
+                </div>
+                <div class="sidebar-row mono">
+                  <span class="sidebar-icon">✓</span
+                  ><span>Concise relevance beats exhaustive profile data.</span>
+                </div>
+              </section>
+            </aside>
+          </section>
+        </div>
+      </template>
+
+      <template id="screen-personDetail">
+        <div class="surface">
+          <div data-topbar="public"></div>
+          <div class="stripe-line"></div>
+          <section class="grid-public">
+            <main class="panel">
+              <div class="panel-head accent mono">
+                <span>[ WHY RELEVANT ]</span><span>UTILITY FIRST</span>
+              </div>
+              <div class="panel-body">
+                <div class="event-row" style="grid-template-columns: 1fr">
+                  <div>
+                    <div class="row-title">Ask Maya about</div>
+                    <div class="row-copy">
+                      Designing sales follow-up systems, moving from founder-led sales to repeatable
+                      outbound, and deciding when a first sales hire is actually ready.
+                    </div>
+                  </div>
+                </div>
+                <div class="event-row" style="grid-template-columns: 1fr">
+                  <div>
+                    <div class="row-title">Public-safe context</div>
+                    <div class="row-copy">
+                      This is a short curated profile. It is not a social profile and does not
+                      promise an exhaustive bio.
+                    </div>
+                  </div>
+                </div>
+                <div class="actions mono" style="justify-content: flex-start; margin-top: 8px">
+                  <a class="btn">BACK TO PEOPLE</a><a class="btn primary">REQUEST INTRO</a>
+                </div>
+              </div>
+            </main>
+            <aside class="panel-stack">
+              <section class="panel reddit-card">
+                <div class="panel-head mono"><span>[ PERSON ]</span><span>PROFILE-LITE</span></div>
+                <div class="sidebar-hero">
+                  <div class="sidebar-kicker mono">OPTIONAL DETAIL / ROW EXPANSION</div>
+                  <div class="sidebar-title-lg">Maya Singh</div>
+                  <div class="sidebar-subcopy mono">
+                    B2B growth operator. Useful for founder-led sales, follow-up systems, and first
+                    sales-hire readiness.
+                  </div>
+                </div>
+                <div class="sidebar-row mono">
+                  <span class="sidebar-icon">▣</span><span>Role: B2B Growth Operator</span>
+                </div>
+                <div class="sidebar-row mono">
+                  <span class="sidebar-icon">◎</span
+                  ><span>Location: Fredericton / Company: Independent Advisor</span>
+                </div>
+                <div class="sidebar-row mono">
+                  <span class="sidebar-icon">→</span><span>Public intro path available</span>
+                </div>
+                <div class="panel-body">
+                  <span class="tag mono">SALES SYSTEMS</span
+                  ><span class="tag mono">ATTENDING JUN 13</span
+                  ><span class="tag ok mono">PUBLIC</span>
+                </div>
+              </section>
+              <section class="panel reddit-card">
+                <div class="panel-head mono">
+                  <span>[ RELATED EVENTS ]</span><span>WHERE THIS PERSON MATTERS</span>
+                </div>
+                <div class="panel-body">
+                  <div class="event-row" style="grid-template-columns: 78px 1fr">
+                    <div class="datebox mono">JUN 13</div>
+                    <div>
+                      <div class="row-title">June Operator Dinner</div>
+                      <div class="meta mono">GOOD TO ASK ABOUT SALES SYSTEMS</div>
+                      <span class="tag accent mono">RELEVANT</span>
+                    </div>
+                  </div>
+                  <div class="event-row" style="grid-template-columns: 78px 1fr">
+                    <div class="datebox mono">JUN 26</div>
+                    <div>
+                      <div class="row-title">Hiring first sales</div>
+                      <div class="meta mono">HOST / OFFICE HOURS</div>
+                      <span class="tag ok mono">HOST</span>
+                    </div>
+                  </div>
+                </div>
+              </section>
+            </aside>
+          </section>
+        </div>
+      </template>
+
+      <template id="screen-companies">
+        <div class="surface">
+          <div data-topbar="public"></div>
+          <div class="stripe-line"></div>
+          <section class="grid-public">
+            <main class="panel">
+              <div class="panel-head accent mono">
+                <span>[ COMPANIES ]</span><span>YC-STYLE DIRECTORY</span>
+              </div>
+              <div class="panel-body">
+                <div class="filterbar mono">
+                  <input class="search" value="SEARCH COMPANY, INDUSTRY, LOCATION, FOUNDER" />
+                  <span class="chip active">TOP</span><span class="chip">HIRING</span
+                  ><span class="chip">AI</span><span class="chip">CONSTRUCTION</span
+                  ><span class="chip">FREDERICTON</span>
+                </div>
+                <ul class="person-list">
+                  <li class="person-row">
+                    <div>
+                      <div class="name">Agent Maple</div>
+                      <div class="meta mono">B2B SOFTWARE / AI WORKFLOWS / FREDERICTON</div>
+                      <div class="row-copy">
+                        AI workflow layer for construction and local service operators.
+                      </div>
+                      <span class="tag mono">SPRING 2026</span><span class="tag mono">AI OPS</span
+                      ><span class="tag ok mono">ACTIVE</span>
+                    </div>
+                    <div class="actions mono"><a class="btn">VIEW COMPANY</a></div>
+                  </li>
+                  <li class="person-row">
+                    <div>
+                      <div class="name">Iron Maple Constructors</div>
+                      <div class="meta mono">INDUSTRIALS / CONSTRUCTION / NEW BRUNSWICK</div>
+                      <div class="row-copy">
+                        Regional construction company connected to field-to-office workflow
+                        conversations.
+                      </div>
+                      <span class="tag mono">MEMBER COMPANY</span
+                      ><span class="tag mono">REAL ESTATE + CONSTRUCTION</span
+                      ><span class="tag ok mono">ACTIVE</span>
+                    </div>
+                    <div class="actions mono"><a class="btn">VIEW COMPANY</a></div>
+                  </li>
+                  <li class="person-row">
+                    <div>
+                      <div class="name">Atlantic CFO Bench</div>
+                      <div class="meta mono">B2B SERVICES / FINANCE OPS / ATLANTIC CANADA</div>
+                      <div class="row-copy">
+                        Finance operators helping founders compare pricing, margin, and operating
+                        cadence.
+                      </div>
+                      <span class="tag mono">FINANCE</span
+                      ><span class="tag mono">RELATED: JUL 09</span
+                      ><span class="tag ok mono">ACTIVE</span>
+                    </div>
+                    <div class="actions mono"><a class="btn">VIEW COMPANY</a></div>
+                  </li>
+                  <li class="person-row">
+                    <div>
+                      <div class="name">Maritime Dev Studio</div>
+                      <div class="meta mono">SOFTWARE SERVICES / MONCTON / LIMITED PUBLIC</div>
+                      <div class="row-copy">
+                        Services studio included as a useful operator example when public context is
+                        approved.
+                      </div>
+                      <span class="tag mono">SERVICE OPS</span
+                      ><span class="tag warn mono">LIMITED PUBLIC</span>
+                    </div>
+                    <div class="actions mono"><a class="btn">EXPAND</a></div>
+                  </li>
+                </ul>
+              </div>
+            </main>
+            <aside class="panel-stack">
+              <section class="panel reddit-card">
+                <div class="panel-head mono"><span>[ COMPANIES ]</span><span>YC MODEL</span></div>
+                <div class="sidebar-hero">
+                  <div class="sidebar-kicker mono">STARTUP DIRECTORY / PUBLIC INDEX</div>
+                  <div class="sidebar-title-lg">Companies</div>
+                  <div class="sidebar-subcopy mono">
+                    Like YC Companies: scan companies by short tagline, industry, location, status,
+                    cohort/stage, and related people/events.
+                  </div>
+                </div>
+                <div class="sidebar-row mono">
+                  <span class="sidebar-icon">▣</span
+                  ><span>Directory function, not vendor marketplace</span>
+                </div>
+                <div class="sidebar-row mono">
+                  <span class="sidebar-icon">◎</span
+                  ><span>Rows stay compact; detail pages carry depth</span>
+                </div>
+                <div class="sidebar-stat-grid mono">
+                  <div class="sidebar-stat"><strong>18</strong><span>Public companies</span></div>
+                  <div class="sidebar-stat"><strong>09</strong><span>Event-linked</span></div>
+                </div>
+              </section>
+              <section class="panel reddit-card">
+                <div class="panel-head mono">
+                  <span>[ FILTERS ]</span><span>COMPANY INDEX</span>
+                </div>
+                <div class="panel-body mono">
+                  <span class="chip active">TOP</span>
+                  <span class="chip">HIRING</span>
+                  <span class="chip">AI OPS</span>
+                  <span class="chip">CONSTRUCTION</span>
+                  <span class="chip">FINANCE</span>
+                  <span class="chip">FREDERICTON</span>
+                </div>
+              </section>
+              <section class="panel reddit-card">
+                <div class="panel-head mono"><span>[ ROWS SHOW ]</span><span>FIELDS</span></div>
+                <div class="sidebar-row mono">
+                  <span class="sidebar-icon">1</span
+                  ><span>Name, tagline, category/industry, and location.</span>
+                </div>
+                <div class="sidebar-row mono">
+                  <span class="sidebar-icon">2</span
+                  ><span>Status/stage, team size if safe, and hiring/open-to-help.</span>
+                </div>
+                <div class="sidebar-row mono">
+                  <span class="sidebar-icon">3</span
+                  ><span>Related founders/people and events when useful.</span>
+                </div>
+              </section>
+              <section class="panel reddit-card">
+                <div class="panel-head mono">
+                  <span>[ BOUNDARIES ]</span><span>PUBLIC-SAFE</span>
+                </div>
+                <div class="panel-body">
+                  <div class="warning mono">
+                    No sales directory, exhaustive company profile, private CRM notes, or implied
+                    endorsement.
+                  </div>
+                </div>
+              </section>
+            </aside>
+          </section>
+        </div>
+      </template>
+
+      <template id="screen-companyDetail">
+        <div class="surface">
+          <div data-topbar="public"></div>
+          <div class="stripe-line"></div>
+          <section class="grid-public">
+            <main class="panel">
+              <div class="panel-head accent mono"><span>[ COMPANY ]</span><span>PROFILE</span></div>
+              <div class="panel-body">
+                <div class="preview-card">
+                  <div class="row-title">Agent Maple</div>
+                  <div class="row-meta mono">
+                    B2B SOFTWARE / AI WORKFLOWS / FREDERICTON / ACTIVE
+                  </div>
+                  <p class="row-copy">
+                    AI workflow layer for construction and local service operators. The page should
+                    answer what the company does, where it fits, who is connected, and which events
+                    it appears in.
+                  </p>
+                  <div class="actions mono" style="justify-content: flex-start; margin-top: 8px">
+                    <a class="btn">BACK TO COMPANIES</a><a class="btn primary">WEBSITE</a>
+                  </div>
+                </div>
+                <div class="panel-head mono" style="margin: 14px -9px 8px">
+                  <span>[ RELATED PEOPLE ]</span><span>PUBLIC-SAFE</span>
+                </div>
+                <div class="person-row">
+                  <div>
+                    <div class="name">Jeremy Legere</div>
+                    <div class="meta mono">CEO / HOST</div>
+                    <div class="row-copy">
+                      Relevant for AI workflows and construction/service operations.
+                    </div>
+                    <span class="tag ok mono">PUBLIC</span>
+                  </div>
+                  <a class="btn mono">VIEW</a>
+                </div>
+                <div class="person-row">
+                  <div>
+                    <div class="name">Logan Carr</div>
+                    <div class="meta mono">CTO / SYSTEMS</div>
+                    <div class="row-copy">
+                      Public-safe technical context only when approved for display.
+                    </div>
+                    <span class="tag warn mono">LIMITED PUBLIC</span>
+                  </div>
+                  <a class="btn mono">VIEW</a>
+                </div>
+                <div class="panel-head mono" style="margin: 14px -9px 8px">
+                  <span>[ RELATED EVENTS ]</span><span>WHERE IT APPEARS</span>
+                </div>
+                <div class="event-row" style="grid-template-columns: 78px 1fr">
+                  <div class="datebox mono">JUN 13</div>
+                  <div>
+                    <div class="row-title">June Operator Dinner</div>
+                    <div class="meta mono">HOST COMPANY / AI WORKFLOWS</div>
+                    <span class="tag accent mono">HOST</span>
+                  </div>
+                </div>
+                <div class="event-row" style="grid-template-columns: 78px 1fr">
+                  <div class="datebox mono">JUL 18</div>
+                  <div>
+                    <div class="row-title">Service ops workflow review</div>
+                    <div class="meta mono">CASE EXAMPLE / LOCAL SERVICES</div>
+                    <span class="tag mono">RELATED</span>
+                  </div>
+                </div>
+                <div class="panel-head mono" style="margin: 14px -9px 8px">
+                  <span>[ PUBLIC UPDATES ]</span><span>OPTIONAL</span>
+                </div>
+                <div class="event-row" style="grid-template-columns: 1fr">
+                  <div>
+                    <div class="row-title">Iron Maple pilot live</div>
+                    <div class="meta mono">MAY 2026 / PUBLIC-SAFE CUSTOMER SIGNAL</div>
+                    <div class="row-copy">
+                      Use only if approved; modeled after YC detail pages having news/updates
+                      without turning into a feed.
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </main>
+            <aside class="panel-stack">
+              <section class="panel reddit-card">
+                <div class="panel-head mono"><span>[ COMPANY ]</span><span>PROFILE-LITE</span></div>
+                <div class="sidebar-hero">
+                  <div class="sidebar-kicker mono">YC-STYLE DETAIL SUMMARY</div>
+                  <div class="sidebar-title-lg">Agent Maple</div>
+                  <div class="sidebar-subcopy mono">
+                    AI workflow layer for construction and local service operators.
+                  </div>
+                </div>
+                <div class="sidebar-row mono">
+                  <span class="sidebar-icon">▣</span><span>Founded: 2024 / Stage: Pre-seed</span>
+                </div>
+                <div class="sidebar-row mono">
+                  <span class="sidebar-icon">◎</span
+                  ><span>Location: Fredericton / Status: Active</span>
+                </div>
+                <div class="sidebar-row mono">
+                  <span class="sidebar-icon">→</span><span>Team size: 2 / Connected people: 2</span>
+                </div>
+                <div class="panel-body">
+                  <span class="tag mono">B2B</span><span class="tag mono">AI OPS</span
+                  ><span class="tag ok mono">ACTIVE</span>
+                </div>
+              </section>
+              <section class="panel reddit-card">
+                <div class="panel-head mono"><span>[ PUBLIC FIELDS ]</span><span>SPEC</span></div>
+                <div class="sidebar-row mono">
+                  <span class="sidebar-icon">1</span
+                  ><span>Tagline, category, status, founded, team size, location.</span>
+                </div>
+                <div class="sidebar-row mono">
+                  <span class="sidebar-icon">2</span
+                  ><span>Related public founders/people and upcoming events.</span>
+                </div>
+                <div class="sidebar-row mono">
+                  <span class="sidebar-icon">3</span
+                  ><span>Website/contact and public updates only when approved.</span>
+                </div>
+              </section>
+            </aside>
+          </section>
+        </div>
+      </template>
+
+      <template id="screen-login">
+        <div class="surface">
+          <div data-topbar="public"></div>
+          <div class="stripe-line"></div>
+          <section class="grid-public">
+            <main class="panel">
+              <div class="panel-head accent mono">
+                <span>[ LOGIN ]</span><span>RETURNING MEMBER / ADMIN</span>
+              </div>
+              <div class="panel-body form-grid">
+                <input class="field" value="EMAIL — YOU@COMPANY.COM" />
+                <input class="field" value="PASSWORD OR MAGIC LINK CODE" />
+                <div class="actions mono" style="justify-content: flex-start">
+                  <button class="btn primary">LOGIN</button
+                  ><button class="btn">SEND MAGIC LINK</button
+                  ><button class="btn">FORGOT PASSWORD</button>
+                </div>
+                <div class="warning mono">
+                  PUBLIC BROWSING DOES NOT REQUIRE LOGIN. USE THIS FOR RSVP HISTORY, PROFILE/COMPANY
+                  EDITS, OR ADMIN MAINTENANCE IF PERMITTED.
+                </div>
+                <div class="event-row" style="grid-template-columns: 1fr">
+                  <div>
+                    <div class="row-title">Need an account?</div>
+                    <div class="row-copy">
+                      Register to request member access. Public directory display is consent-based
+                      and not automatic.
+                    </div>
+                    <span class="tag mono">REGISTER LINK</span
+                    ><span class="tag ok mono">PUBLIC PAGES REMAIN OPEN</span>
+                  </div>
+                </div>
+              </div>
+            </main>
+            <aside class="panel-stack">
+              <section class="panel reddit-card">
+                <div class="panel-head mono"><span>[ AUTH ]</span><span>SPEC</span></div>
+                <div class="sidebar-hero">
+                  <div class="sidebar-kicker mono">NO LOGIN WALL</div>
+                  <div class="sidebar-title-lg">Login</div>
+                  <div class="sidebar-subcopy mono">
+                    Returning members, organizers, and admins sign in here. First-time visitors can
+                    still browse Events, People, and Companies.
+                  </div>
+                </div>
+                <div class="sidebar-row mono">
+                  <span class="sidebar-icon">▣</span
+                  ><span>Member: RSVP history and profile/company edits.</span>
+                </div>
+                <div class="sidebar-row mono">
+                  <span class="sidebar-icon">◎</span
+                  ><span>Admin: route to maintenance if permitted.</span>
+                </div>
+                <div class="sidebar-row mono">
+                  <span class="sidebar-icon">→</span><span>New user: go to Registration.</span>
+                </div>
+              </section>
+              <section class="panel reddit-card">
+                <div class="panel-head mono">
+                  <span>[ BOUNDARIES ]</span><span>ACCOUNT SAFETY</span>
+                </div>
+                <div class="panel-body">
+                  <div class="warning mono">
+                    Do not imply public browsing requires login. Do not leak whether an email exists
+                    in error states.
+                  </div>
+                </div>
+              </section>
+            </aside>
+          </section>
+        </div>
+      </template>
+
+      <template id="screen-registration">
+        <div class="surface">
+          <div data-topbar="public"></div>
+          <div class="stripe-line"></div>
+          <section class="grid-public">
+            <main class="panel">
+              <div class="panel-head accent mono">
+                <span>[ REGISTRATION ]</span><span>REQUEST ACCOUNT</span>
+              </div>
+              <div class="panel-body form-grid">
+                <input class="field" value="NAME * — FULL NAME" />
+                <input class="field" value="EMAIL * — YOU@COMPANY.COM" />
+                <input class="field" value="COMPANY / ROLE — AGENT MAPLE / FOUNDER" />
+                <input class="field" value="LOCATION — FREDERICTON / REMOTE / OTHER" />
+                <textarea class="field">
+WHAT ARE YOU BUILDING OR WORKING ON? — SHORT FOUNDER / OPERATOR CONTEXT.</textarea
+                >
+                <input class="field" value="TOPICS — AI OPS, SALES, CONSTRUCTION, FINANCE" />
+                <div class="warning mono">
+                  CONSENT: PUBLIC DIRECTORY DISPLAY IS OPTIONAL AND REQUIRES APPROVAL. REGISTRATION
+                  DOES NOT AUTO-PUBLISH A PROFILE.
+                </div>
+                <div class="actions mono" style="justify-content: flex-start">
+                  <button class="btn primary">REQUEST ACCOUNT</button
+                  ><button class="btn">BACK TO LOGIN</button>
+                </div>
+              </div>
+            </main>
+            <aside class="panel-stack">
+              <section class="panel reddit-card">
+                <div class="panel-head mono"><span>[ REGISTER ]</span><span>SPEC</span></div>
+                <div class="sidebar-hero">
+                  <div class="sidebar-kicker mono">LIGHTWEIGHT / CONSENT-AWARE</div>
+                  <div class="sidebar-title-lg">Register</div>
+                  <div class="sidebar-subcopy mono">
+                    Create or request an account to participate beyond public browsing. Capture
+                    enough context for trust without creating a social network.
+                  </div>
+                </div>
+                <div class="sidebar-row mono">
+                  <span class="sidebar-icon">1</span
+                  ><span>Name, email, company/role, and founder/operator context.</span>
+                </div>
+                <div class="sidebar-row mono">
+                  <span class="sidebar-icon">2</span
+                  ><span>Topics/interests help make People and Companies useful.</span>
+                </div>
+                <div class="sidebar-row mono">
+                  <span class="sidebar-icon">3</span
+                  ><span>Consent controls whether anything can appear publicly.</span>
+                </div>
+              </section>
+              <section class="panel reddit-card">
+                <div class="panel-head mono"><span>[ POST SUBMIT ]</span><span>STATE</span></div>
+                <div class="panel-body">
+                  <div class="warning mono">
+                    Show either CHECK EMAIL or PENDING ORGANIZER REVIEW. No public profile
+                    auto-publish.
+                  </div>
+                </div>
+              </section>
+            </aside>
+          </section>
+        </div>
+      </template>
+
+      <template id="screen-admin">
+        <div class="surface">
+          <div data-topbar="admin"></div>
+          <section class="page-head">
+            <div class="page-title">
+              <div class="kicker mono">INTERNAL / SIMPLE MAINTENANCE</div>
+              <div class="h1">Admin Maintenance</div>
+              <div class="subcopy mono">
+                Events + People + Companies + Accounts. Link people and companies to events, review
+                registrations, and control visibility/consent. No analytics dashboard, no issue
+                tracker bloat.
+              </div>
+            </div>
+            <div class="head-stats mono">
+              <div class="stat">
+                <div class="stat-num">03</div>
+                <div class="stat-label">EVENTS</div>
+              </div>
+              <div class="stat">
+                <div class="stat-num">42</div>
+                <div class="stat-label">PEOPLE</div>
+              </div>
+              <div class="stat">
+                <div class="stat-num">18</div>
+                <div class="stat-label">COMPANIES</div>
+              </div>
+              <div class="stat">
+                <div class="stat-num">07</div>
+                <div class="stat-label">PENDING</div>
+              </div>
+            </div>
+          </section>
+          <div class="stripe-line"></div>
+          <section class="grid-admin">
+            <aside class="panel">
+              <div class="panel-head accent mono">
+                <span>[ TABLES ]</span><span>SIMPLE CRUD</span>
+              </div>
+              <div class="panel-body">
+                <div class="tab-row mono">
+                  <span class="tab active">EVENTS</span><span class="tab">PEOPLE</span
+                  ><span class="tab">COMPANIES</span><span class="tab">ACCOUNTS</span>
+                </div>
+                <div class="event-row" style="grid-template-columns: 1fr">
+                  <div>
+                    <div class="row-title">June Operator Dinner</div>
+                    <div class="meta mono">OPEN / RSVP OK / 3 PEOPLE LINKED</div>
+                    <span class="tag ok mono">PUBLISHED</span>
+                  </div>
+                </div>
+                <div class="event-row" style="grid-template-columns: 1fr">
+                  <div>
+                    <div class="row-title">Hiring first sales</div>
+                    <div class="meta mono">OPEN / HOST MAYA / 2 PEOPLE LINKED</div>
+                    <span class="tag ok mono">PUBLISHED</span>
+                  </div>
+                </div>
+                <div class="event-row" style="grid-template-columns: 1fr">
+                  <div>
+                    <div class="row-title">Agent Maple</div>
+                    <div class="meta mono">COMPANY / HOST / 2 EVENTS LINKED</div>
+                    <span class="tag ok mono">PUBLIC</span>
+                  </div>
+                </div>
+                <div class="event-row" style="grid-template-columns: 1fr">
+                  <div>
+                    <div class="row-title">Sam Founder</div>
+                    <div class="meta mono">REGISTRATION / NEEDS CONSENT REVIEW</div>
+                    <span class="tag warn mono">PENDING</span>
+                  </div>
+                </div>
+              </div>
+            </aside>
+            <main class="panel">
+              <div class="panel-head mono">
+                <span>[ EDIT EVENT ]</span><span>REQUIRED FIELDS MARKED</span>
+              </div>
+              <div class="panel-body form-grid">
+                <input
+                  class="field"
+                  value="TITLE * — JUNE OPERATOR DINNER: AI WORKFLOWS IN LOCAL SERVICES"
+                />
+                <input class="field" value="DATE/TIME * — THU JUN 13 / 18:30" />
+                <input class="field" value="LOCATION/FORMAT * — FREDERICTON / PRIVATE ROOM TBD" />
+                <input class="field" value="HOST * — JEREMY LEGERE" />
+                <textarea class="field">
+WHY ATTEND — SMALL DINNER FOR FOUNDERS AND OPERATORS BUILDING REPEATABLE SALES, SERVICE DELIVERY, AND AI-ASSISTED WORKFLOWS.</textarea
+                >
+                <input class="field" value="RSVP URL * — https://lu.ma/freddy-operators" />
+                <div class="warning mono">
+                  WARNING: LOCATION IS MARKED TBD. PUBLISH ALLOWED, BUT PUBLIC ROW SHOWS TBD.
+                </div>
+                <div class="actions mono" style="justify-content: flex-start">
+                  <button class="btn primary">PUBLISH</button><button class="btn">SAVE DRAFT</button
+                  ><button class="btn">PREVIEW ROW</button>
+                </div>
+              </div>
+            </main>
+            <aside class="panel">
+              <div class="panel-head accent mono">
+                <span>[ LINK CONTEXT TO EVENT ]</span><span>VISIBILITY</span>
+              </div>
+              <div class="panel-body form-grid">
+                <input class="field" value="EVENT — JUNE OPERATOR DINNER" />
+                <input class="field" value="PERSON — MAYA SINGH" />
+                <input
+                  class="field"
+                  value="RELEVANCE — GOOD TO ASK ABOUT SALES SYSTEMS / HOST COMPANY"
+                />
+                <input class="field" value="VISIBILITY — PUBLIC APPROVED" />
+                <input class="field" value="COMPANY — AGENT MAPLE" />
+                <input class="field" value="ACCOUNT — SAM@COMPANY.COM / PENDING APPROVAL" />
+                <div class="preview-card">
+                  <div class="name">Maya Singh</div>
+                  <div class="meta mono">B2B GROWTH / SALES SYSTEMS</div>
+                  <div class="row-copy">
+                    Good to ask about follow-up systems and first sales-hire readiness.
+                  </div>
+                  <span class="tag accent mono">GOOD TO ASK ABOUT SALES</span>
+                </div>
+                <div class="actions mono" style="justify-content: flex-start">
+                  <button class="btn primary">LINK + PUBLISH</button
+                  ><button class="btn">KEEP PRIVATE</button>
+                </div>
+              </div>
+            </aside>
+          </section>
+        </div>
+      </template>
+    </div>
+
+    <script>
+      const screens = {
+        events: {
+          title: 'EVENTS',
+          note: 'Default public front page. Compact HN-like event rows with RSVP/register.',
+        },
+        eventDetail: {
+          title: 'EVENT DETAIL',
+          note: 'Optional event page for why attend and who will I meet context.',
+        },
+        people: {
+          title: 'PEOPLE',
+          note: 'Bookface-like public-safe directory with search, filters, and compact rows.',
+        },
+        personDetail: {
+          title: 'PERSON DETAIL',
+          note: 'Optional profile-lite page or row expansion. No social network creep.',
+        },
+        companies: {
+          title: 'COMPANIES',
+          note: 'YC-style company directory with search, filters, short taglines, and company status.',
+        },
+        companyDetail: {
+          title: 'COMPANY DETAIL',
+          note: 'YC-style company profile with summary, facts, related people, and events.',
+        },
+        login: {
+          title: 'LOGIN',
+          note: 'Returning member/admin authentication. Public browsing remains open.',
+        },
+        registration: {
+          title: 'REGISTRATION',
+          note: 'Lightweight account request with consent-aware directory context.',
+        },
+        admin: {
+          title: 'ADMIN MAINTENANCE',
+          note: 'Simple internal CRUD for events, people, companies, accounts, links, relevance, and visibility.',
+        },
+      };
+      const state = { screen: 'events', device: 'desktop' };
+      const mount = document.getElementById('mount');
+      const canvasTitle = document.getElementById('canvasTitle');
+      const canvasNote = document.getElementById('canvasNote');
+
+      function render() {
+        const template = document.getElementById(`screen-${state.screen}`);
+        const node = template.content.firstElementChild.cloneNode(true);
+        const topbarSlot = node.querySelector('[data-topbar]');
+        if (topbarSlot) {
+          const topbar = document
+            .getElementById(`topbar-${topbarSlot.dataset.topbar}`)
+            .content.firstElementChild.cloneNode(true);
+          topbarSlot.replaceWith(topbar);
+        }
+
+        mount.className = state.device === 'desktop' ? 'desktop-frame' : 'mobile-frame';
+        const screen = document.createElement('div');
+        screen.className = state.device === 'desktop' ? 'desktop-screen' : 'mobile-screen';
+        screen.appendChild(node);
+        mount.innerHTML = '';
+        mount.appendChild(screen);
+
+        canvasTitle.textContent = `${screens[state.screen].title} / ${state.device === 'desktop' ? 'PC' : 'MOBILE'}`;
+        canvasNote.textContent = screens[state.screen].note;
+        document
+          .querySelectorAll('[data-screen]')
+          .forEach((btn) => btn.classList.toggle('active', btn.dataset.screen === state.screen));
+        document
+          .querySelectorAll('[data-device]')
+          .forEach((btn) => btn.classList.toggle('active', btn.dataset.device === state.device));
+      }
+
+      document.querySelectorAll('[data-screen]').forEach((btn) =>
+        btn.addEventListener('click', () => {
+          state.screen = btn.dataset.screen;
+          render();
+        }),
+      );
+      document.querySelectorAll('[data-device]').forEach((btn) =>
+        btn.addEventListener('click', () => {
+          state.device = btn.dataset.device;
+          render();
+        }),
+      );
+      render();
+    </script>
+  </body>
+</html>

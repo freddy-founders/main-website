@@ -1,0 +1,97 @@
+[tools]
+node = "24"
+pnpm = "10.18.3"
+terraform = "latest"
+"aqua:supabase/cli" = "latest"
+"npm:wrangler" = "latest"
+"aqua:rhysd/actionlint" = "latest"
+
+[tasks.install]
+description = "Install project dependencies"
+run = "pnpm install"
+
+[tasks.dev]
+description = "Run the local Vite dev server"
+run = "pnpm dev"
+
+[tasks.build]
+description = "Build tokens, typecheck, and build the app"
+run = "pnpm build"
+
+[tasks.check]
+description = "Run all lightweight local checks"
+run = "pnpm check"
+
+[tasks.lint]
+description = "Run static checks"
+run = "pnpm lint"
+
+[tasks.fmt]
+description = "Format repository files"
+run = "pnpm fmt"
+
+[tasks."fmt:check"]
+description = "Check repository formatting"
+run = "pnpm fmt:check"
+
+[tasks."workflow:lint"]
+description = "Validate GitHub Actions workflow syntax"
+run = "actionlint"
+
+[tasks."tokens:build"]
+description = "Compile design tokens into app CSS variables"
+run = "pnpm tokens:build"
+
+
+[tasks."test:unit"]
+description = "Run TDD unit tests"
+run = "pnpm test:unit"
+
+[tasks."test:unit:watch"]
+description = "Run TDD unit tests in watch mode"
+run = "pnpm test:unit:watch"
+
+[tasks.bdd]
+description = "Run executable product requirements"
+run = "pnpm bdd"
+
+[tasks.precommit]
+description = "Run the same BDD/TDD gate as the git pre-commit hook"
+run = "pnpm precommit"
+
+[tasks."hooks:install"]
+description = "Install repo-owned git hooks and Git LFS hooks"
+run = "pnpm hooks:install"
+
+
+[tasks."supabase:start"]
+description = "Start local Supabase stack"
+run = "pnpm supabase:start"
+
+[tasks."supabase:reset"]
+description = "Reset local Supabase database from migrations and seed"
+run = "pnpm supabase:reset"
+
+[tasks."supabase:types"]
+description = "Generate TypeScript database types from local Supabase"
+run = "pnpm supabase:types"
+
+[tasks."tf:init"]
+description = "Initialize Terraform providers"
+run = "pnpm tf:init"
+
+[tasks."tf:fmt"]
+description = "Format Terraform files"
+run = "pnpm tf:fmt"
+
+[tasks."tf:validate"]
+description = "Validate Terraform files after init"
+run = "pnpm tf:validate"
+
+[tasks.deploy]
+description = "Build and deploy via Wrangler"
+run = "pnpm deploy"
+
+[tasks."bootstrap:github-cd"]
+description = "Configure GitHub Actions secret/variable for Cloudflare CD from local env"
+run = "pnpm bootstrap:github-cd"

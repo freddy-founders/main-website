@@ -1,0 +1,1047 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Freddy Founders Nine-Page Spec</title>
+    <style>
+      :root {
+        --paper: #f0eee7;
+        --paper-2: #e3dbd2;
+        --ink: #050505;
+        --muted: #5f5f55;
+        --accent: #9f2d20;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        background: #d8d1c8;
+        color: var(--ink);
+        font-family: Arial, Helvetica, sans-serif;
+      }
+      .mono {
+        font-family: 'IBM Plex Mono', 'Courier New', monospace;
+        letter-spacing: 0.045em;
+        text-transform: uppercase;
+      }
+      .shell {
+        max-width: 1180px;
+        margin: 28px auto;
+        border: 2px solid var(--ink);
+        background: var(--paper);
+      }
+      header {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: 20px;
+        padding: 18px;
+        border-bottom: 2px solid var(--ink);
+        background: var(--accent);
+        color: #fff;
+      }
+      h1 {
+        margin: 0;
+        font-size: 56px;
+        line-height: 0.84;
+        letter-spacing: -0.065em;
+        text-transform: uppercase;
+      }
+      .meta {
+        font-size: 11px;
+        color: #f8ded8;
+        align-self: end;
+        text-align: right;
+      }
+      nav {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1px;
+        background: var(--ink);
+        border-bottom: 2px solid var(--ink);
+      }
+      nav a {
+        color: var(--ink);
+        background: var(--paper);
+        padding: 10px 12px;
+        text-decoration: none;
+        font-size: 11px;
+        font-weight: 800;
+      }
+      nav a:hover {
+        background: var(--paper-2);
+      }
+      section {
+        display: grid;
+        grid-template-columns: 260px minmax(0, 1fr);
+        border-bottom: 2px solid var(--ink);
+      }
+      section:last-child {
+        border-bottom: 0;
+      }
+      .side {
+        padding: 14px;
+        border-right: 2px solid var(--ink);
+        background: var(--paper-2);
+      }
+      .side h2 {
+        margin: 0;
+        font-size: 30px;
+        line-height: 0.9;
+        letter-spacing: -0.055em;
+        text-transform: uppercase;
+      }
+      .side p {
+        color: var(--muted);
+        font-size: 12px;
+        line-height: 1.4;
+      }
+      .body {
+        padding: 14px;
+        display: grid;
+        gap: 14px;
+      }
+      .block {
+        border: 1px solid var(--ink);
+        background: #fffaf1;
+      }
+      .block h3 {
+        margin: 0;
+        padding: 8px 10px;
+        border-bottom: 1px solid var(--ink);
+        background: var(--ink);
+        color: #fff;
+        font-size: 11px;
+      }
+      .block ul {
+        margin: 0;
+        padding: 10px 10px 10px 24px;
+      }
+      .block li {
+        margin: 0 0 7px;
+        font-size: 13px;
+        line-height: 1.35;
+      }
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 14px;
+      }
+      .feedback {
+        min-height: 78px;
+        padding: 10px;
+        border-top: 1px solid var(--ink);
+        background: var(--paper);
+        color: var(--muted);
+        font-size: 12px;
+        line-height: 1.4;
+      }
+      .tag {
+        display: inline-block;
+        margin: 0 4px 4px 0;
+        border: 1px solid var(--ink);
+        padding: 2px 5px;
+        font-size: 10px;
+        background: var(--paper-2);
+      }
+      @media (max-width: 800px) {
+        .shell {
+          margin: 0;
+          border-left: 0;
+          border-right: 0;
+        }
+        header,
+        section {
+          grid-template-columns: 1fr;
+        }
+        .side {
+          border-right: 0;
+          border-bottom: 2px solid var(--ink);
+        }
+        .grid {
+          grid-template-columns: 1fr;
+        }
+        h1 {
+          font-size: 42px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="shell">
+      <header>
+        <div>
+          <h1>Freddy Founders<br />Nine-Page Spec</h1>
+        </div>
+        <div class="meta mono">
+          HTML: community-hub-yc-flow.html<br />Palette: Freddy Brick<br />MVP entities: Events +
+          People + Companies + Auth
+        </div>
+      </header>
+      <nav class="mono">
+        <a href="#events">1 Events</a>
+        <a href="#event-detail">2 Event Detail</a>
+        <a href="#people">3 People</a>
+        <a href="#person-detail">4 Person Detail</a>
+        <a href="#companies">5 Companies</a>
+        <a href="#company-detail">6 Company Detail</a>
+        <a href="#login">7 Login</a>
+        <a href="#registration">8 Registration</a>
+        <a href="#admin">9 Admin Maintenance</a>
+      </nav>
+
+      <section id="events">
+        <aside class="side">
+          <h2>1. Events</h2>
+          <p>
+            Default public front page: compact HN-like list of upcoming events with RSVP/register.
+          </p>
+          <span class="tag mono">Public</span><span class="tag mono">Default</span
+          ><span class="tag mono">HN-like</span>
+        </aside>
+        <div class="body">
+          <div class="grid">
+            <div class="block">
+              <h3 class="mono">User Stories</h3>
+              <ul>
+                <li>As a visitor, I can immediately see what events are coming up.</li>
+                <li>
+                  As a founder/member, I can scan upcoming events and decide what is relevant to me.
+                </li>
+                <li>As a visitor, I can RSVP/register without digging through email.</li>
+                <li>
+                  As a returning member, I can distinguish upcoming, full, closed, and past events
+                  quickly.
+                </li>
+                <li>As an organizer, I can share one URL as the canonical events source.</li>
+              </ul>
+            </div>
+            <div class="block">
+              <h3 class="mono">Affordances</h3>
+              <ul>
+                <li>Compact text rows.</li>
+                <li>Date/month separators.</li>
+                <li>Status tags: open, full, closed, past.</li>
+                <li>RSVP/Register button or link.</li>
+                <li>Details link only when needed.</li>
+                <li>Optional people signal: “host + 2 relevant people”.</li>
+                <li>Clear archived/past treatment.</li>
+              </ul>
+            </div>
+          </div>
+          <div class="grid">
+            <div class="block">
+              <h3 class="mono">Row Content</h3>
+              <ul>
+                <li>Date/time.</li>
+                <li>Plain event title.</li>
+                <li>Location or format.</li>
+                <li>Host.</li>
+                <li>One-line fit/context.</li>
+                <li>Status.</li>
+                <li>RSVP/Register action.</li>
+              </ul>
+            </div>
+            <div class="block">
+              <h3 class="mono">Page Design</h3>
+              <ul>
+                <li>Top bar: Freddy Founders, Events, People, Companies, optional Login.</li>
+                <li>
+                  No title banner: page title, subtitle, and lightweight stats should move into the
+                  right sidebar on desktop.
+                </li>
+                <li>Primary list: dense upcoming-first rows.</li>
+                <li>Row hierarchy: title first, metadata second, RSVP visible but not flashy.</li>
+                <li>Metadata uses small muted/mono text.</li>
+                <li>
+                  Right sidebar: spec-aligned rail for context, filters, visible fields, stats, and
+                  boundaries.
+                </li>
+              </ul>
+            </div>
+          </div>
+          <div class="block">
+            <h3 class="mono">Right Sidebar</h3>
+            <ul>
+              <li>Page context: what Freddy Founders Events is.</li>
+              <li>Stats: upcoming events, public people, event-linked companies if useful.</li>
+              <li>Filters: upcoming, open, in person, remote, past.</li>
+              <li>
+                Visible fields: date/time, location/format, host, status, fit/context,
+                RSVP/Register, details when useful.
+              </li>
+              <li>
+                Boundaries: no feed/comments/voting, no payment/ticketing flow, RSVP only if likely
+                attending.
+              </li>
+            </ul>
+          </div>
+          <div class="block">
+            <h3 class="mono">Do Not Include</h3>
+            <ul>
+              <li>No hero bloat.</li>
+              <li>No feed/posts/comments.</li>
+              <li>No voting/ranking/karma.</li>
+              <li>No payment/ticketing flow.</li>
+              <li>No marketing landing-page treatment.</li>
+            </ul>
+            <div class="feedback" contenteditable="true">Feedback notes for Events...</div>
+          </div>
+        </div>
+      </section>
+
+      <section id="event-detail">
+        <aside class="side">
+          <h2>2. Event Detail</h2>
+          <p>Optional page for events that need “why attend?” and “who will I meet?” context.</p>
+          <span class="tag mono">Optional</span><span class="tag mono">Context</span
+          ><span class="tag mono">RSVP</span>
+        </aside>
+        <div class="body">
+          <div class="grid">
+            <div class="block">
+              <h3 class="mono">User Stories</h3>
+              <ul>
+                <li>As a visitor, I can understand whether this event is for me before I RSVP.</li>
+                <li>As a founder/member, I can see who is relevant to meet at this event.</li>
+                <li>As a visitor, I can understand the event format and expectations.</li>
+                <li>As an organizer, I can attach public-safe people context to an event.</li>
+                <li>As an organizer, I can keep event context concise and current.</li>
+              </ul>
+            </div>
+            <div class="block">
+              <h3 class="mono">Affordances</h3>
+              <ul>
+                <li>Prominent RSVP/Register action.</li>
+                <li>Back to Events link.</li>
+                <li>Shareable event URL.</li>
+                <li>Status tag.</li>
+                <li>People-at-event compact rows.</li>
+                <li>Relevance labels: host, speaker, attending, good to ask about X.</li>
+              </ul>
+            </div>
+          </div>
+          <div class="grid">
+            <div class="block">
+              <h3 class="mono">Content</h3>
+              <ul>
+                <li>Title, date/time, location/format, host.</li>
+                <li>One-line fit/context.</li>
+                <li>Short “why attend?” copy.</li>
+                <li>Intended audience / what to expect.</li>
+                <li>Event status.</li>
+                <li>RSVP/register action.</li>
+                <li>People-at-event module when useful.</li>
+              </ul>
+            </div>
+            <div class="block">
+              <h3 class="mono">Page Design</h3>
+              <ul>
+                <li>
+                  No title banner: event name, short explanation, and lightweight stats should sit
+                  in the right sidebar on desktop.
+                </li>
+                <li>
+                  Primary action zone near the top of the main content; repeat near bottom only if
+                  long.
+                </li>
+                <li>Context block: short, practical, non-marketing.</li>
+                <li>Fit block: who should attend / expectations.</li>
+                <li>People block: compact rows with relevance labels.</li>
+                <li>
+                  Desktop uses the right sidebar for event overview and stats; mobile is one column.
+                </li>
+              </ul>
+            </div>
+          </div>
+          <div class="block">
+            <h3 class="mono">Do Not Include</h3>
+            <ul>
+              <li>No discussion thread.</li>
+              <li>No attendee social feed.</li>
+              <li>No full event platform.</li>
+              <li>No long marketing page.</li>
+              <li>No people context unless tied to this event.</li>
+            </ul>
+            <div class="feedback" contenteditable="true">Feedback notes for Event Detail...</div>
+          </div>
+        </div>
+      </section>
+
+      <section id="people">
+        <aside class="side">
+          <h2>3. People</h2>
+          <p>Bookface-like public-safe directory/index of people in and around Freddy Founders.</p>
+          <span class="tag mono">Directory</span><span class="tag mono">Bookface</span
+          ><span class="tag mono">Public-safe</span>
+        </aside>
+        <div class="body">
+          <div class="grid">
+            <div class="block">
+              <h3 class="mono">User Stories</h3>
+              <ul>
+                <li>As a visitor, I can see who is in the community.</li>
+                <li>
+                  As a founder/member, I can find people by role, company, expertise, or event
+                  relevance.
+                </li>
+                <li>
+                  As a founder/member, I can understand why someone is worth meeting without reading
+                  a long profile.
+                </li>
+                <li>As a visitor, I can see which people are connected to upcoming events.</li>
+                <li>As an organizer, I can keep people context lightweight and safe.</li>
+              </ul>
+            </div>
+            <div class="block">
+              <h3 class="mono">Affordances</h3>
+              <ul>
+                <li>Search input.</li>
+                <li>Filter chips.</li>
+                <li>Compact public-safe rows/cards.</li>
+                <li>Topic tags.</li>
+                <li>Related event links.</li>
+                <li>Optional View More / row expansion.</li>
+              </ul>
+            </div>
+          </div>
+          <div class="grid">
+            <div class="block">
+              <h3 class="mono">Person Row Content</h3>
+              <ul>
+                <li>Name.</li>
+                <li>Company / role / affiliation.</li>
+                <li>Location if useful.</li>
+                <li>Short relevance blurb.</li>
+                <li>Topic tags.</li>
+                <li>Related upcoming event(s), if any.</li>
+                <li>Public-safe link/contact path if allowed.</li>
+              </ul>
+            </div>
+            <div class="block">
+              <h3 class="mono">Page Design</h3>
+              <ul>
+                <li>Top bar matches Events and includes Companies.</li>
+                <li>
+                  No title banner: page title, description, and lightweight stats should move into
+                  the right sidebar on desktop.
+                </li>
+                <li>
+                  Search/filter area can sit in the right sidebar on desktop and above the list on
+                  mobile.
+                </li>
+                <li>Directory list uses compact rows, not social cards.</li>
+                <li>Row hierarchy: name → role/company → relevance/tags.</li>
+                <li>
+                  Right sidebar: spec-aligned rail with filters, visible fields, stats, and
+                  visibility notes.
+                </li>
+              </ul>
+            </div>
+          </div>
+          <div class="block">
+            <h3 class="mono">Right Sidebar</h3>
+            <ul>
+              <li>Filters: topic/expertise, company, role/category, event relevance, location.</li>
+              <li>
+                Visible fields: name, role/company, location, relevance blurb, tags, related events,
+                public-safe contact path.
+              </li>
+              <li>
+                Boundaries: public-safe only, concise relevance over bios, no private-member
+                exposure.
+              </li>
+              <li>Stats: public people, topic count, event-linked people.</li>
+            </ul>
+          </div>
+          <div class="block">
+            <h3 class="mono">Filters + Non-goals</h3>
+            <ul>
+              <li>Filters: topic/expertise, company, role/category, event relevance, location.</li>
+              <li>No feed grammar: no posts, likes, follows, activity stream.</li>
+              <li>No messaging.</li>
+              <li>No LinkedIn-style exhaustive profiles.</li>
+              <li>No private-member exposure.</li>
+              <li>No self-serve account assumption.</li>
+            </ul>
+            <div class="feedback" contenteditable="true">Feedback notes for People...</div>
+          </div>
+        </div>
+      </section>
+
+      <section id="person-detail">
+        <aside class="side">
+          <h2>4. Person Detail</h2>
+          <p>Optional profile-lite page or row expansion when a person row needs more context.</p>
+          <span class="tag mono">Optional</span><span class="tag mono">Profile-lite</span
+          ><span class="tag mono">No social</span>
+        </aside>
+        <div class="body">
+          <div class="grid">
+            <div class="block">
+              <h3 class="mono">User Stories</h3>
+              <ul>
+                <li>
+                  As a visitor, I can understand what a person works on and why they are relevant.
+                </li>
+                <li>As a founder/member, I can see which events this person is connected to.</li>
+                <li>
+                  As a founder/member, I can decide whether this person is worth meeting or asking
+                  about a topic.
+                </li>
+                <li>
+                  As an organizer, I can expose concise public context without creating a profile
+                  system.
+                </li>
+              </ul>
+            </div>
+            <div class="block">
+              <h3 class="mono">Affordances</h3>
+              <ul>
+                <li>Expand/collapse row or profile-lite link.</li>
+                <li>Related event links.</li>
+                <li>Topic tags.</li>
+                <li>Optional external link.</li>
+                <li>Back to People.</li>
+              </ul>
+            </div>
+          </div>
+          <div class="grid">
+            <div class="block">
+              <h3 class="mono">Content</h3>
+              <ul>
+                <li>Name.</li>
+                <li>Role/company/affiliation.</li>
+                <li>Location if useful.</li>
+                <li>Short bio/relevance.</li>
+                <li>Topic tags.</li>
+                <li>Related events.</li>
+                <li>Public-safe contact/link if allowed.</li>
+              </ul>
+            </div>
+            <div class="block">
+              <h3 class="mono">Page Design</h3>
+              <ul>
+                <li>
+                  No title banner: person name, short bio, and key facts should move into the right
+                  sidebar on desktop.
+                </li>
+                <li>If row expansion: open inline under the person row and keep it short.</li>
+                <li>
+                  If dedicated page: main content stays utility-first while the sidebar carries
+                  profile summary and facts.
+                </li>
+                <li>Utility-first order: name → role/company → why relevant → events/topics.</li>
+                <li>
+                  No social decoration: no cover photo, activity feed, follower count, endorsements.
+                </li>
+              </ul>
+            </div>
+          </div>
+          <div class="block">
+            <h3 class="mono">Do Not Include</h3>
+            <ul>
+              <li>No wall/feed.</li>
+              <li>No private messages.</li>
+              <li>No follower graph.</li>
+              <li>No account dashboard.</li>
+              <li>No long biography unless explicitly useful.</li>
+            </ul>
+            <div class="feedback" contenteditable="true">
+              Feedback notes for Person Detail / Row Expansion...
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="companies">
+        <aside class="side">
+          <h2>5. Companies</h2>
+          <p>YC Companies-style public directory for companies connected to Freddy Founders.</p>
+          <span class="tag mono">Directory</span><span class="tag mono">YC-inspired</span
+          ><span class="tag mono">Public-safe</span>
+        </aside>
+        <div class="body">
+          <div class="grid">
+            <div class="block">
+              <h3 class="mono">User Stories</h3>
+              <ul>
+                <li>As a visitor, I can scan what each company does from a short tagline.</li>
+                <li>
+                  As a founder/member, I can filter companies by industry, location, stage/status,
+                  hiring/open-to-help, event relevance, or related people.
+                </li>
+                <li>
+                  As a founder/member, I can understand why a company appears without reading
+                  marketing copy.
+                </li>
+                <li>
+                  As a visitor, I can see which companies connect to upcoming events and public
+                  people.
+                </li>
+                <li>As an organizer, I can keep company context lightweight and consent-safe.</li>
+              </ul>
+            </div>
+            <div class="block">
+              <h3 class="mono">Affordances</h3>
+              <ul>
+                <li>Search input.</li>
+                <li>
+                  YC-like filters: top/featured, hiring/open-to-help, industry, location,
+                  size/stage/status, event relevance.
+                </li>
+                <li>Compact company rows/cards.</li>
+                <li>Logo/initial mark.</li>
+                <li>Tagline and metadata chips.</li>
+                <li>Related event links.</li>
+                <li>Related public founder/person links.</li>
+                <li>Optional View Company / row expansion.</li>
+              </ul>
+            </div>
+          </div>
+          <div class="grid">
+            <div class="block">
+              <h3 class="mono">Company Row Content</h3>
+              <ul>
+                <li>Logo/initial mark if available.</li>
+                <li>Company name.</li>
+                <li>Short tagline.</li>
+                <li>Industry/category.</li>
+                <li>Location/HQ or remote status.</li>
+                <li>Stage/status and hiring/open-to-help state.</li>
+                <li>Cohort/batch/community marker if used.</li>
+                <li>Team size range if public-safe.</li>
+                <li>Related upcoming event(s), if any.</li>
+                <li>Related public people/founders, if approved.</li>
+                <li>Public-safe website/contact path if allowed.</li>
+              </ul>
+            </div>
+            <div class="block">
+              <h3 class="mono">Page Design</h3>
+              <ul>
+                <li>Top bar matches Events and People, with Companies in public nav.</li>
+                <li>
+                  No title banner: page title, description, and lightweight stats move into the
+                  right sidebar.
+                </li>
+                <li>
+                  Search/filter area can sit in the right sidebar on desktop and above the list on
+                  mobile.
+                </li>
+                <li>Company list uses compact YC-like rows/cards, not marketing cards.</li>
+                <li>
+                  Row hierarchy: company name → tagline → industry/location/status → related
+                  people/events.
+                </li>
+                <li>
+                  Right sidebar: context, YC-like filters, visible fields, stats, and public-safe
+                  boundaries.
+                </li>
+              </ul>
+            </div>
+          </div>
+          <div class="block">
+            <h3 class="mono">Right Sidebar</h3>
+            <ul>
+              <li>
+                Page context: Freddy Founders company directory, inspired by YC Startup Directory.
+              </li>
+              <li>
+                Filters: top/featured, hiring/open-to-help, industry/category, location,
+                size/stage/status, event relevance, related people.
+              </li>
+              <li>
+                Visible fields: logo/initial, name, tagline, category, location, status, team size
+                if public-safe, related events/people.
+              </li>
+              <li>
+                Stats: public companies, event-linked companies, hiring/open-to-help companies.
+              </li>
+              <li>
+                Boundaries: not a vendor marketplace, no private CRM notes, no implied endorsement.
+              </li>
+            </ul>
+          </div>
+          <div class="block">
+            <h3 class="mono">Do Not Include</h3>
+            <ul>
+              <li>No sales/vendor marketplace.</li>
+              <li>No exhaustive company directory.</li>
+              <li>No marketing landing pages.</li>
+              <li>No reviews/ratings.</li>
+              <li>No private CRM notes.</li>
+              <li>No implied endorsement.</li>
+            </ul>
+            <div class="feedback" contenteditable="true">Feedback notes for Companies...</div>
+          </div>
+        </div>
+      </section>
+
+      <section id="company-detail">
+        <aside class="side">
+          <h2>6. Company Detail</h2>
+          <p>
+            YC-like company profile for summary, facts, related people, events, and optional public
+            updates.
+          </p>
+          <span class="tag mono">Optional</span><span class="tag mono">YC-inspired</span
+          ><span class="tag mono">No marketplace</span>
+        </aside>
+        <div class="body">
+          <div class="grid">
+            <div class="block">
+              <h3 class="mono">User Stories</h3>
+              <ul>
+                <li>As a visitor, I can understand what a company does and why it is relevant.</li>
+                <li>
+                  As a founder/member, I can see which public people and events connect to this
+                  company.
+                </li>
+                <li>
+                  As a founder/member, I can decide whether the company is worth knowing about for a
+                  topic or event.
+                </li>
+                <li>
+                  As an organizer, I can expose concise public company context without creating a
+                  marketing page.
+                </li>
+              </ul>
+            </div>
+            <div class="block">
+              <h3 class="mono">Affordances</h3>
+              <ul>
+                <li>Profile-lite page link or row expansion.</li>
+                <li>Company website/contact link.</li>
+                <li>Related event links.</li>
+                <li>Related founder/person links.</li>
+                <li>Topic/category tags.</li>
+                <li>Small fact table.</li>
+                <li>Back to Companies.</li>
+              </ul>
+            </div>
+          </div>
+          <div class="grid">
+            <div class="block">
+              <h3 class="mono">Content</h3>
+              <ul>
+                <li>Name.</li>
+                <li>Logo/initial mark if available.</li>
+                <li>Tagline.</li>
+                <li>Longer public-safe description.</li>
+                <li>Founded/year if useful.</li>
+                <li>Stage/status.</li>
+                <li>Team size range if public-safe.</li>
+                <li>Location/HQ or remote status.</li>
+                <li>Industry/category.</li>
+                <li>Related public people/founders.</li>
+                <li>Related events.</li>
+                <li>Optional public updates/news.</li>
+                <li>Public-safe website/contact path if allowed.</li>
+              </ul>
+            </div>
+            <div class="block">
+              <h3 class="mono">Page Design</h3>
+              <ul>
+                <li>
+                  No title banner: company name, tagline, and key facts sit in the right-side
+                  summary on desktop.
+                </li>
+                <li>If row expansion: open inline under the company row and keep it short.</li>
+                <li>
+                  If dedicated page: main content mirrors YC company detail: summary/description,
+                  people/founders, related events, optional updates/news.
+                </li>
+                <li>
+                  Side summary carries logo/initial, name, tagline, website/contact,
+                  founded/stage/team/location/status facts, category tags.
+                </li>
+                <li>
+                  No marketing decoration: no hero image, testimonials, ratings, pricing, or long
+                  company story.
+                </li>
+              </ul>
+            </div>
+          </div>
+          <div class="block">
+            <h3 class="mono">Do Not Include</h3>
+            <ul>
+              <li>No vendor marketplace.</li>
+              <li>No reviews/ratings.</li>
+              <li>No private CRM notes.</li>
+              <li>No long company profile.</li>
+              <li>No implied endorsement.</li>
+            </ul>
+            <div class="feedback" contenteditable="true">Feedback notes for Company Detail...</div>
+          </div>
+        </div>
+      </section>
+
+      <section id="login">
+        <aside class="side">
+          <h2>7. Login</h2>
+          <p>Simple returning-member/admin authentication entry. Public browsing remains open.</p>
+          <span class="tag mono">Auth</span><span class="tag mono">Utility</span
+          ><span class="tag mono">No wall</span>
+        </aside>
+        <div class="body">
+          <div class="grid">
+            <div class="block">
+              <h3 class="mono">User Stories</h3>
+              <ul>
+                <li>As a returning member, I can log in to manage RSVP/profile context.</li>
+                <li>As an organizer/admin, I can log in to reach maintenance tools.</li>
+                <li>As a visitor, I can recover my account or move to registration.</li>
+                <li>
+                  As a public browser, I can understand Events, People, and Companies remain
+                  viewable without logging in.
+                </li>
+              </ul>
+            </div>
+            <div class="block">
+              <h3 class="mono">Affordances</h3>
+              <ul>
+                <li>Email field.</li>
+                <li>Password or magic-link field.</li>
+                <li>Login action.</li>
+                <li>Forgot password / send magic link.</li>
+                <li>Register link.</li>
+                <li>Public browsing reassurance.</li>
+                <li>Role-aware destination after login.</li>
+              </ul>
+            </div>
+          </div>
+          <div class="grid">
+            <div class="block">
+              <h3 class="mono">Content</h3>
+              <ul>
+                <li>Email.</li>
+                <li>Password or magic-link option.</li>
+                <li>Login button.</li>
+                <li>Register link.</li>
+                <li>Forgot password link.</li>
+                <li>Privacy/public-directory reminder.</li>
+              </ul>
+            </div>
+            <div class="block">
+              <h3 class="mono">Page Design</h3>
+              <ul>
+                <li>No marketing hero.</li>
+                <li>Compact utility form.</li>
+                <li>
+                  Side/facts rail explains what login enables: RSVP history, profile/company edits,
+                  admin maintenance if permitted.
+                </li>
+                <li>Public browsing should not feel gated.</li>
+                <li>Error state should not leak account existence.</li>
+              </ul>
+            </div>
+          </div>
+          <div class="block">
+            <h3 class="mono">Do Not Include</h3>
+            <ul>
+              <li>No social login wall.</li>
+              <li>No member feed/dashboard.</li>
+              <li>No complex account settings.</li>
+              <li>No forced login for public browsing.</li>
+            </ul>
+            <div class="feedback" contenteditable="true">Feedback notes for Login...</div>
+          </div>
+        </div>
+      </section>
+
+      <section id="registration">
+        <aside class="side">
+          <h2>8. Registration</h2>
+          <p>
+            Lightweight account creation / request-access surface with consent-aware directory
+            context.
+          </p>
+          <span class="tag mono">Auth</span><span class="tag mono">Request Access</span
+          ><span class="tag mono">Consent</span>
+        </aside>
+        <div class="body">
+          <div class="grid">
+            <div class="block">
+              <h3 class="mono">User Stories</h3>
+              <ul>
+                <li>
+                  As a visitor, I can create or request an account without emailing the organizer.
+                </li>
+                <li>
+                  As a prospective member, I can provide enough context for approval and directory
+                  safety.
+                </li>
+                <li>As a founder/member, I can indicate my company affiliation and interests.</li>
+                <li>
+                  As an organizer, I can capture consent and avoid accidental public exposure.
+                </li>
+              </ul>
+            </div>
+            <div class="block">
+              <h3 class="mono">Affordances</h3>
+              <ul>
+                <li>Name, email, and account setup fields.</li>
+                <li>Company/role/affiliation field.</li>
+                <li>Reason for joining / what building field.</li>
+                <li>Topic interests.</li>
+                <li>Public directory consent checkbox.</li>
+                <li>Submit registration / request access.</li>
+                <li>Login link.</li>
+                <li>Pending approval or email verification state.</li>
+              </ul>
+            </div>
+          </div>
+          <div class="grid">
+            <div class="block">
+              <h3 class="mono">Content</h3>
+              <ul>
+                <li>Name.</li>
+                <li>Email.</li>
+                <li>Password or account setup method.</li>
+                <li>Company / role / affiliation.</li>
+                <li>Location if useful.</li>
+                <li>Founder/operator context.</li>
+                <li>Topics/interests.</li>
+                <li>Consent to public profile/company display.</li>
+              </ul>
+            </div>
+            <div class="block">
+              <h3 class="mono">Page Design</h3>
+              <ul>
+                <li>No growth funnel.</li>
+                <li>Simple form, not a marketing conversion page.</li>
+                <li>
+                  Progressive disclosure: only ask fields needed for access, consent, and useful
+                  directory context.
+                </li>
+                <li>
+                  Trust copy says public directory display is optional/approved, not automatic.
+                </li>
+                <li>Post-submit state: check email or pending organizer review.</li>
+              </ul>
+            </div>
+          </div>
+          <div class="block">
+            <h3 class="mono">Do Not Include</h3>
+            <ul>
+              <li>No open social-network signup.</li>
+              <li>No public profile auto-publish.</li>
+              <li>No invite/referral gamification.</li>
+              <li>No onboarding wizard.</li>
+            </ul>
+            <div class="feedback" contenteditable="true">Feedback notes for Registration...</div>
+          </div>
+        </div>
+      </section>
+
+      <section id="admin">
+        <aside class="side">
+          <h2>9. Admin Maintenance</h2>
+          <p>
+            Simple internal CRUD for Events, People, Companies, registrations, and relevance links.
+          </p>
+          <span class="tag mono">Internal</span><span class="tag mono">CRUD</span
+          ><span class="tag mono">Simple</span>
+        </aside>
+        <div class="body">
+          <div class="grid">
+            <div class="block">
+              <h3 class="mono">User Stories</h3>
+              <ul>
+                <li>As an organizer, I can create and edit an event.</li>
+                <li>As an organizer, I can create and edit a public-safe person row.</li>
+                <li>As an organizer, I can create and edit a public-safe company row.</li>
+                <li>
+                  As an organizer, I can link people and companies to events with relevance labels.
+                </li>
+                <li>
+                  As an organizer, I can control whether people, companies, accounts, and event
+                  links are public.
+                </li>
+                <li>
+                  As an organizer, I can review pending registrations and consent before approval.
+                </li>
+                <li>As an organizer, I can spot missing required fields before publishing.</li>
+              </ul>
+            </div>
+            <div class="block">
+              <h3 class="mono">Affordances</h3>
+              <ul>
+                <li>Events table/list.</li>
+                <li>People table/list.</li>
+                <li>Companies table/list.</li>
+                <li>Registrations/accounts table/list.</li>
+                <li>Create/edit forms.</li>
+                <li>Link person or company to event action.</li>
+                <li>Approve/decline registration action.</li>
+                <li>Visibility/consent selector.</li>
+                <li>Missing-field warnings.</li>
+                <li>Public preview.</li>
+                <li>Publish/save draft actions.</li>
+              </ul>
+            </div>
+          </div>
+          <div class="grid">
+            <div class="block">
+              <h3 class="mono">Admin Objects</h3>
+              <ul>
+                <li>
+                  Event: title, date/time, location, host, fit/context, why attend, audience,
+                  status, RSVP, visibility.
+                </li>
+                <li>
+                  Person: name, company/role, location, relevance blurb, topic tags, public-safe
+                  contact, visibility.
+                </li>
+                <li>
+                  Company: name, industry/category, location, relevance blurb, topic tags, related
+                  people, public-safe website/contact, visibility.
+                </li>
+                <li>
+                  Account/registration: name, email, company/role, reason for joining, approval
+                  status, consent, role.
+                </li>
+                <li>
+                  Event-person / event-company link: event, person or company, relevance label,
+                  display note, visibility/consent.
+                </li>
+              </ul>
+            </div>
+            <div class="block">
+              <h3 class="mono">Page Design</h3>
+              <ul>
+                <li>
+                  Internal tabs or columns for Events, People, Companies, Links, and Accounts.
+                </li>
+                <li>
+                  Default view: current upcoming events, recently edited people/companies, and
+                  pending registrations.
+                </li>
+                <li>Plain low-burden forms with required fields clearly marked.</li>
+                <li>Inline warnings are practical and specific.</li>
+                <li>
+                  Preview shows public event row, people row, company row, and event context links.
+                </li>
+                <li>No dashboard bloat.</li>
+              </ul>
+            </div>
+          </div>
+          <div class="block">
+            <h3 class="mono">Do Not Include</h3>
+            <ul>
+              <li>No moderation system.</li>
+              <li>No complex issue tracker.</li>
+              <li>No analytics dashboard.</li>
+              <li>No email campaign management.</li>
+              <li>No payment/ticketing admin.</li>
+            </ul>
+            <div class="feedback" contenteditable="true">
+              Feedback notes for Admin Maintenance...
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </body>
+</html>

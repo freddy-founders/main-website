@@ -1,0 +1,59 @@
+{
+  "name": "freddy-founders",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "packageManager": "pnpm@10.18.3",
+  "scripts": {
+    "dev": "vite --host 0.0.0.0",
+    "build": "pnpm tokens:build && tsc --noEmit && vite build",
+    "preview": "vite preview --host 0.0.0.0",
+    "check": "pnpm tokens:build && pnpm check:types && pnpm test:unit && pnpm bdd",
+    "check:types": "tsc --noEmit",
+    "test": "pnpm test:unit",
+    "test:unit": "vitest run",
+    "test:unit:watch": "vitest",
+    "precommit": "pnpm fmt:check && pnpm tokens:build && pnpm check:types && pnpm test:unit && pnpm bdd",
+    "hooks:install": "sh scripts/install-git-hooks.sh",
+    "lint": "pnpm check:types",
+    "fmt": "prettier --write .",
+    "fmt:check": "prettier --check .",
+    "tokens:build": "style-dictionary build --config style-dictionary.config.mjs",
+    "bdd": "NODE_OPTIONS='--import tsx' cucumber-js --config cucumber.mjs",
+    "supabase:types": "supabase gen types typescript --local > src/adapters/supabase/database.types.ts",
+    "supabase:start": "supabase start",
+    "supabase:reset": "supabase db reset",
+    "tf:init": "terraform -chdir=infra/terraform init",
+    "tf:fmt": "terraform -chdir=infra/terraform fmt -recursive",
+    "tf:validate": "terraform -chdir=infra/terraform validate",
+    "deploy": "sh scripts/deploy-cloudflare.sh",
+    "bootstrap:github-cd": "sh scripts/bootstrap-github-cd.sh"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.79.0",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "react-router-dom": "^7.9.5"
+  },
+  "devDependencies": {
+    "@cucumber/cucumber": "^12.2.0",
+    "@types/node": "^24.9.2",
+    "@types/react": "^19.2.2",
+    "@types/react-dom": "^19.2.2",
+    "@vitejs/plugin-react": "^5.1.0",
+    "prettier": "^3.6.2",
+    "style-dictionary": "^5.1.1",
+    "tsx": "^4.20.6",
+    "typescript": "^5.9.3",
+    "vite": "^7.1.12",
+    "vitest": "^4.0.6",
+    "wrangler": "^4.45.0"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "esbuild",
+      "sharp",
+      "workerd"
+    ]
+  }
+}

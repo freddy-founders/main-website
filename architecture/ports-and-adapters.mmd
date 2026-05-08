@@ -1,0 +1,25 @@
+flowchart LR
+  subgraph DrivingAdapters[Driving adapters]
+    UI[React routes]
+    BDD[Cucumber steps]
+    Unit[Vitest tests]
+  end
+
+  subgraph Core[Application core]
+    Domain[Domain models and policies]
+    App[Application services]
+    PortDefs[Port interfaces]
+  end
+
+  subgraph DrivenAdapters[Driven adapters]
+    Memory[In-memory repositories]
+    Supabase[Supabase repositories]
+  end
+
+  UI --> App
+  BDD --> App
+  Unit --> App
+  App --> Domain
+  App --> PortDefs
+  PortDefs --> Memory
+  PortDefs --> Supabase

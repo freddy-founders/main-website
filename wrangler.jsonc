@@ -1,0 +1,20 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "freddy-founders",
+  "compatibility_date": "2026-05-08",
+  "workers_dev": false,
+  "routes": [
+    {
+      "pattern": "freddyfounders.com",
+      "custom_domain": true,
+    },
+    {
+      "pattern": "www.freddyfounders.com",
+      "custom_domain": true,
+    },
+  ],
+  "assets": {
+    "directory": "./dist",
+    "not_found_handling": "single-page-application",
+  },
+}

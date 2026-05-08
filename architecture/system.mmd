@@ -1,0 +1,23 @@
+flowchart TD
+  Browser[Browser / public visitor / admin]
+  Vite[Vite React SPA]
+  Router[React Router library]
+  Services[Application services]
+  Ports[Ports interfaces]
+  Memory[In-memory adapters for scaffold and tests]
+  SupabaseAdapters[Supabase adapters]
+  Supabase[(Supabase Postgres/Auth/RLS)]
+  Cloudflare[Cloudflare static assets / Workers escape hatch]
+  Terraform[Terraform provider resources]
+  Tokens[Style Dictionary tokens]
+  BDD[Cucumber executable requirements]
+  Unit[Vitest TDD unit tests]
+
+  Browser --> Cloudflare --> Vite --> Router --> Services --> Ports
+  Ports --> Memory
+  Ports --> SupabaseAdapters --> Supabase
+  Tokens --> Vite
+  BDD --> Services
+  Unit --> Services
+  Terraform -. documents/provider resources .-> Cloudflare
+  Terraform -. documents/provider resources .-> Supabase

@@ -1,0 +1,9 @@
+@import './generated/tokens.css';
+
+:root {
+  --surface-page: var(--color-paper);
+  --surface-panel: var(--color-paper-muted);
+  --text-primary: var(--color-ink);
+  --text-secondary: var(--color-ink-muted);
+  --focus-ring: 0 0 0 2px var(--color-accent-muted);
+}

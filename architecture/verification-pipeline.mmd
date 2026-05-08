@@ -1,0 +1,16 @@
+flowchart TD
+  Commit[git commit]
+  Hook[.githooks/pre-commit]
+  Format[pnpm fmt:check]
+  Tokens[pnpm tokens:build]
+  Types[pnpm check:types]
+  Unit[pnpm test:unit]
+  BDD[pnpm bdd]
+  CI[GitHub Actions verify]
+
+  Commit --> Hook --> Format --> Tokens --> Types --> Unit --> BDD
+  Format --> CI
+  Tokens --> CI
+  Types --> CI
+  Unit --> CI
+  BDD --> CI
