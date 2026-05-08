@@ -7,7 +7,12 @@ export class SupabaseCompanyRepository implements CompanyRepository {
   constructor(private readonly client: SupabaseClient<Database>) {}
 
   async listPublicCompanies(): Promise<CompanySummary[]> {
-    const { data, error } = await this.client.from('companies').select('*');
+    const { data, error } = await this.client
+      .from('companies')
+      .select('*')
+      .eq('publication_status', 'published')
+      .eq('visibility', 'public')
+      .order('name', { ascending: true });
 
     if (error) {
       throw error;

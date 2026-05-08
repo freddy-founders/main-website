@@ -251,3 +251,30 @@ The current Events reference is not the earlier generic panel/list layout. It de
 These are now canonical design composites in `src/design/composites/board.tsx`, backed by `src/design/design-system.css` and `src/design/registry.ts`.
 
 Rationale: the live Events page should match the new tighter reference grammar directly, while keeping the design library as the source of reusable layout primitives.
+
+## 2026-05-08 — Supabase is activation-ready and can back runtime adapters
+
+The app composition root now uses Supabase adapters when browser-safe Supabase runtime env exists:
+
+- `VITE_DATA_SOURCE=auto` uses Supabase when `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` are present, otherwise memory fixtures.
+- `VITE_DATA_SOURCE=supabase` requires Supabase env and fails fast if missing.
+- `VITE_DATA_SOURCE=memory` forces in-memory fixtures.
+
+The linked Supabase project is `vnhuiwxavsplhbmwvctx` at `https://vnhuiwxavsplhbmwvctx.supabase.co`. Migrations were pushed to the linked project, seed data was applied, and generated database types now come from the remote project.
+
+Secrets remain outside git. The repo owns activation scripts and env contracts, not provider secret values.
+
+## 2026-05-08 — Environment, smoke, and Terraform setup are code-owned gates
+
+Environment validation is now a repo gate via `scripts/check-env-contract.mjs` / `pnpm env:check`. It checks `.env.example`, validates runtime data-source mode, and validates provider/runtime value shapes without requiring secrets in normal CI.
+
+Production-preview route smoke lives in `scripts/smoke-routes.mjs` / `pnpm smoke:routes`. It starts Vite preview from `dist`, verifies public routes serve the app shell, and verifies the site icon asset.
+
+Terraform setup now includes:
+
+- `infra/terraform/terraform.tfvars.example`
+- optional Supabase project ownership variables/resources
+- `scripts/terraform-plan.sh`
+- `pnpm tf:plan`
+
+Terraform continues to own DNS/provider setup boundaries; Supabase schema/RLS remains migration-owned.

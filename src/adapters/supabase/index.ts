@@ -1,3 +1,4 @@
+export { createBrowserSupabaseClient, getSupabaseBrowserConfig } from './client';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { SupabaseCompanyRepository } from './companyRepository';
 import type { Database } from './database.types';

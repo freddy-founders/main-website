@@ -1,0 +1,14 @@
+# Copy to terraform.tfvars for local Terraform work. Never commit terraform.tfvars.
+
+cloudflare_account_id = "2772dd9b24aa4f98b9e1df6706764569"
+cloudflare_zone_id    = "74ec913536bf5f472f564d6a9fbb48c2"
+production_domain     = "freddyfounders.com"
+project_name          = "freddy-founders"
+
+# Prefer linking an existing Supabase project first.
+supabase_project_ref = "vnhuiwxavsplhbmwvctx"
+
+# Only set true if Terraform should create the Supabase project.
+create_supabase_project = false
+supabase_organization_id = ""
+supabase_region          = "us-east-1"

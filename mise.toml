@@ -38,6 +38,10 @@ run = "pnpm fmt:check"
 description = "Validate GitHub Actions workflow syntax"
 run = "actionlint"
 
+
+[tasks."env:check"]
+description = "Validate runtime/provider environment contract"
+run = "pnpm env:check"
 [tasks."tokens:build"]
 description = "Compile design tokens into app CSS variables"
 run = "pnpm tokens:build"
@@ -59,6 +63,10 @@ run = "pnpm bdd"
 description = "Run the same BDD/TDD gate as the git pre-commit hook"
 run = "pnpm precommit"
 
+[tasks."smoke:routes"]
+description = "Smoke test production preview routes and favicon"
+run = "pnpm smoke:routes"
+
 [tasks."hooks:install"]
 description = "Install repo-owned git hooks and Git LFS hooks"
 run = "pnpm hooks:install"
@@ -76,6 +84,10 @@ run = "pnpm supabase:reset"
 description = "Generate TypeScript database types from local Supabase"
 run = "pnpm supabase:types"
 
+[tasks."supabase:activate"]
+description = "Link/push remote Supabase and regenerate database types"
+run = "pnpm supabase:activate"
+
 [tasks."tf:init"]
 description = "Initialize Terraform providers"
 run = "pnpm tf:init"
@@ -87,6 +99,10 @@ run = "pnpm tf:fmt"
 [tasks."tf:validate"]
 description = "Validate Terraform files after init"
 run = "pnpm tf:validate"
+
+[tasks."tf:plan"]
+description = "Run Terraform init/fmt/validate/plan using provider env vars"
+run = "pnpm tf:plan"
 
 [tasks.deploy]
 description = "Build and deploy via Wrangler"

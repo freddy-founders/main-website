@@ -36,6 +36,25 @@ variable "supabase_project_ref" {
   default     = null
 }
 
+variable "create_supabase_project" {
+  description = "When true, Terraform creates the Supabase project. Default false assumes an existing project is linked through the Supabase CLI."
+  type        = bool
+  default     = false
+}
+
+variable "supabase_region" {
+  description = "Supabase region used only when create_supabase_project is true."
+  type        = string
+  default     = "us-east-1"
+}
+
+variable "supabase_database_password" {
+  description = "Initial database password used only when create_supabase_project is true. Pass via TF_VAR_supabase_database_password."
+  type        = string
+  sensitive   = true
+  default     = null
+}
+
 variable "project_name" {
   description = "Canonical project name used across providers."
   type        = string

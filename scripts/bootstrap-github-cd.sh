@@ -18,6 +18,23 @@ fi
 printf '%s' "$CLOUDFLARE_API_TOKEN" | gh secret set CLOUDFLARE_API_TOKEN --repo "$repo"
 gh variable set CLOUDFLARE_ACCOUNT_ID --repo "$repo" --body "$CLOUDFLARE_ACCOUNT_ID"
 
+
+if [ -n "${VITE_DATA_SOURCE:-}" ]; then
+  gh variable set VITE_DATA_SOURCE --repo "$repo" --body "$VITE_DATA_SOURCE"
+fi
+
+if [ -n "${VITE_SUPABASE_URL:-}" ]; then
+  gh variable set VITE_SUPABASE_URL --repo "$repo" --body "$VITE_SUPABASE_URL"
+fi
+
+if [ -n "${VITE_SUPABASE_ANON_KEY:-}" ]; then
+  gh variable set VITE_SUPABASE_ANON_KEY --repo "$repo" --body "$VITE_SUPABASE_ANON_KEY"
+fi
+
+if [ -n "${SUPABASE_PROJECT_REF:-}" ]; then
+  gh variable set SUPABASE_PROJECT_REF --repo "$repo" --body "$SUPABASE_PROJECT_REF"
+fi
 echo "GitHub Actions CD bootstrap complete for $repo."
 echo "Configured secret: CLOUDFLARE_API_TOKEN"
 echo "Configured variable: CLOUDFLARE_ACCOUNT_ID"
+echo "Optional Supabase runtime variables are configured when present in local env."

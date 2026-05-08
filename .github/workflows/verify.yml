@@ -15,6 +15,10 @@ jobs:
   ci:
     name: CI / EaC gates
     runs-on: ubuntu-latest
+    env:
+      VITE_DATA_SOURCE: ${{ vars.VITE_DATA_SOURCE }}
+      VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
+      VITE_SUPABASE_ANON_KEY: ${{ vars.VITE_SUPABASE_ANON_KEY }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -41,6 +45,9 @@ jobs:
       - name: Build design tokens
         run: pnpm tokens:build
 
+      - name: Check environment contract
+        run: pnpm env:check
+
       - name: Check design contract
         run: pnpm design:check
 
@@ -55,6 +62,9 @@ jobs:
 
       - name: Build app
         run: pnpm build
+
+      - name: Smoke production routes
+        run: pnpm smoke:routes
 
       - name: Upload deploy artifact
         uses: actions/upload-artifact@v4

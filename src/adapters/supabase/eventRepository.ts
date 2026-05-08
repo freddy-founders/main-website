@@ -7,7 +7,12 @@ export class SupabaseEventRepository implements EventRepository {
   constructor(private readonly client: SupabaseClient<Database>) {}
 
   async listPublicEvents(): Promise<EventSummary[]> {
-    const { data, error } = await this.client.from('events').select('*');
+    const { data, error } = await this.client
+      .from('events')
+      .select('*')
+      .eq('publication_status', 'published')
+      .eq('visibility', 'public')
+      .order('starts_at', { ascending: true });
 
     if (error) {
       throw error;

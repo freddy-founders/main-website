@@ -1,20 +1,11 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from './database.types';
+import { getRuntimeConfig, type SupabaseRuntimeConfig } from '../../env';
 
-export interface SupabaseBrowserConfig {
-  url: string;
-  anonKey: string;
-}
+export type SupabaseBrowserConfig = SupabaseRuntimeConfig;
 
 export function getSupabaseBrowserConfig(): SupabaseBrowserConfig | null {
-  const url = import.meta.env.VITE_SUPABASE_URL;
-  const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-
-  if (!url || !anonKey) {
-    return null;
-  }
-
-  return { url, anonKey };
+  return getRuntimeConfig().supabase;
 }
 
 export function createBrowserSupabaseClient(

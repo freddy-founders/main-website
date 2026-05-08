@@ -12,3 +12,8 @@ output "supabase_resource_model" {
   description = "Supabase ownership boundary for Everything-as-Code."
   value       = local.supabase_resource_model
 }
+
+output "supabase_project_ref" {
+  description = "Existing or Terraform-created Supabase project ref, when known."
+  value       = local.supabase_project_ref
+}

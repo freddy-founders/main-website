@@ -2,22 +2,25 @@
 set -eu
 
 printf '\n[pre-commit] Freddy Founders EaC gate\n'
-printf '[pre-commit] 1/6 formatting\n'
+printf '[pre-commit] 1/7 formatting\n'
 pnpm fmt:check
 
-printf '[pre-commit] 2/6 design tokens\n'
+printf '[pre-commit] 2/7 design tokens\n'
 pnpm tokens:build
 
-printf '[pre-commit] 3/6 design contract\n'
+printf '[pre-commit] 3/7 environment contract\n'
+pnpm env:check
+
+printf '[pre-commit] 4/7 design contract\n'
 pnpm design:check
 
-printf '[pre-commit] 4/6 typecheck\n'
+printf '[pre-commit] 5/7 typecheck\n'
 pnpm check:types
 
-printf '[pre-commit] 5/6 TDD unit tests\n'
+printf '[pre-commit] 6/7 TDD unit tests\n'
 pnpm test:unit
 
-printf '[pre-commit] 6/6 BDD requirements\n'
+printf '[pre-commit] 7/7 BDD requirements\n'
 pnpm bdd
 
 printf '[pre-commit] passed\n'

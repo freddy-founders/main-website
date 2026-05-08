@@ -7,7 +7,13 @@ export class SupabasePersonRepository implements PersonRepository {
   constructor(private readonly client: SupabaseClient<Database>) {}
 
   async listPublicPeople(): Promise<PersonSummary[]> {
-    const { data, error } = await this.client.from('people').select('*');
+    const { data, error } = await this.client
+      .from('people')
+      .select('*')
+      .eq('publication_status', 'published')
+      .eq('visibility', 'public')
+      .eq('public_directory_consent', true)
+      .order('name', { ascending: true });
 
     if (error) {
       throw error;

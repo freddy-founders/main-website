@@ -44,7 +44,7 @@ mise run hooks:install
 
 Dependency install-script approvals are code-owned in `package.json` / `pnpm-workspace.yaml` so required packages such as `esbuild`, `sharp`, and `workerd` can build without an interactive prompt.
 
-Copy `.env.example` to `.env` when real Supabase/Cloudflare values exist. Never commit service-role keys or provider tokens.
+Copy `.env.example` to `.env` when real Supabase/Cloudflare values exist. Never commit service-role keys or provider tokens. `VITE_DATA_SOURCE=auto` uses Supabase when browser-safe Supabase env vars exist and falls back to in-memory fixtures otherwise; set `VITE_DATA_SOURCE=supabase` to fail fast if Supabase values are missing.
 
 ## Development
 
@@ -55,19 +55,42 @@ mise run dev
 ## Verification
 
 ```bash
+mise run env:check
 mise run tokens:build
 mise run test:unit
 mise run bdd
 mise run check
 mise run build
+mise run smoke:routes
 mise run tf:init
 mise run tf:validate
 ```
 
+Supabase activation for a real project:
+
+```bash
+SUPABASE_ACCESS_TOKEN=... \
+SUPABASE_PROJECT_REF=... \
+VITE_SUPABASE_URL=... \
+VITE_SUPABASE_ANON_KEY=... \
+mise run supabase:activate
+```
+
+Then set `VITE_DATA_SOURCE=supabase`, `VITE_SUPABASE_URL`, and `VITE_SUPABASE_ANON_KEY` in the deployment environment to use Supabase-backed adapters.
+
+Terraform local setup:
+
+```bash
+cp infra/terraform/terraform.tfvars.example infra/terraform/terraform.tfvars
+CLOUDFLARE_API_TOKEN=... CLOUDFLARE_ACCOUNT_ID=... mise run tf:plan
+```
+
+Terraform owns DNS and optional provider/project setup. Supabase schema/RLS remains migration-owned in `supabase/migrations/`.
+
 The pre-commit hook runs:
 
 ```text
-formatting -> design tokens -> typecheck -> TDD unit tests -> BDD requirements
+formatting -> design tokens -> env contract -> design contract -> typecheck -> TDD unit tests -> BDD requirements
 ```
 
 ## Trunk CI/CD
