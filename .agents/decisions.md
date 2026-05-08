@@ -279,14 +279,14 @@ Terraform setup now includes:
 
 Terraform continues to own DNS/provider setup boundaries; Supabase schema/RLS remains migration-owned.
 
-## 2026-05-08 — Production Terraform auto-applies before deploy
+## 2026-05-08 — Production Terraform auto-apply is configured behind an explicit flag
 
-Trunk now runs production Terraform auto-apply before Cloudflare deploy. The workflow order is:
+Trunk can run production Terraform auto-apply before Cloudflare deploy when `TERRAFORM_AUTO_APPLY=true` and `CLOUDFLARE_TERRAFORM_API_TOKEN` has DNS read/edit permission. The workflow order is:
 
 ```text
-CI gates -> Terraform validation -> Terraform auto-apply -> Cloudflare deploy
+CI gates -> Terraform validation -> optional Terraform auto-apply -> Cloudflare deploy
 ```
 
 The current prod Terraform ownership surface is intentionally narrow: Cloudflare DNS plus optional future provider/project setup. Existing `www.freddyfounders.com` DNS is imported at plan time through Terraform config-driven import so trunk can enforce the record without manual local state.
 
-This is acceptable for the current DNS-only prod surface. Before using Terraform for stateful or sensitive resources, add durable remote state/locking and avoid storing sensitive provider-created values in transient CI state.
+The first auto-apply attempt proved the existing deploy token only has Workers permissions and cannot read DNS records. Auto-apply is therefore gated off until a DNS-capable Cloudflare Terraform token is installed. This is acceptable for the current DNS-only prod surface. Before using Terraform for stateful or sensitive resources, add durable remote state/locking and avoid storing sensitive provider-created values in transient CI state.
