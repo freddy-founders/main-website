@@ -1,3 +1,4 @@
-export * from './components';
-export * from './examples';
+export * from './composites';
+export * from './patterns';
+export * from './primitives';
 export * from './registry';

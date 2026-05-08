@@ -206,17 +206,21 @@ Design source-of-truth flow:
 - `tokens/source/core.json` owns raw token decisions.
 - Style Dictionary generates `src/styles/generated/tokens.css`.
 - `src/design/design-system.css` owns private `ff-*` classes and visual grammar.
-- `src/design/components.tsx` owns React primitives consumed by app pages.
-- `src/design/registry.ts` documents each canonical primitive.
-- `src/design/examples.tsx` provides representative usage for future review.
+- `src/design/foundations` owns internal helpers and strict prop helpers.
+- `src/design/primitives` owns small canonical UI atoms.
+- `src/design/composites` owns composed layout/content units.
+- `src/design/patterns` owns larger reusable product/catalog shapes.
+- `src/design/registry.ts` documents each component's taxonomy category/status policy.
 - `src/design/README.md` documents the contract.
 
 Enforcement:
 
-- app pages must consume exported design primitives from `src/design`.
+- app pages must import only from the public `src/design` API.
 - app pages must not reference private `ff-*` classes directly.
+- app pages must not import internal design subpaths.
 - raw color values belong in token source/generated output, not app code.
-- exported primitives must be listed in `designComponentRegistry`.
+- design components must not expose `className` or `style` props by default.
+- exported primitives/composites/patterns must be listed in `designComponentRegistry`.
 - `pnpm design:check` runs in precommit and GitHub Actions before deploy.
 
 Rationale: this keeps the mock-derived visual language maintainable and prevents drift back into ad hoc CSS.

@@ -144,7 +144,7 @@ tokens/source/core.json
   -> Style Dictionary
   -> src/styles/generated/tokens.css
   -> src/design/design-system.css
-  -> src/design/components.tsx
+  -> src/design/{primitives,composites,patterns}
   -> app pages
 ```
 
@@ -152,10 +152,12 @@ Design-library rules are documented in `src/design/README.md` and enforced by `p
 
 Key contract:
 
-- app pages consume exported primitives from `src/design`
+- app pages import only from the public `src/design` API
 - `ff-*` classes are private to `src/design`
 - raw color values belong in token source, not app code
-- every exported primitive must appear in `src/design/registry.ts`
+- every exported component must appear in `src/design/registry.ts`
+- registry entries carry formal taxonomy category/status policy
+- design components do not expose `className` or `style` escape hatches by default
 
 Generated CSS variables are imported through `src/styles/tokens.css`.
 
