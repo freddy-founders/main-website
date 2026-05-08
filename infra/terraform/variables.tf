@@ -12,9 +12,9 @@ variable "cloudflare_account_id" {
 }
 
 variable "cloudflare_zone_id" {
-  description = "Optional Cloudflare zone id when the production domain is known."
+  description = "Cloudflare zone id for freddyfounders.com."
   type        = string
-  default     = null
+  default     = "74ec913536bf5f472f564d6a9fbb48c2"
 }
 
 variable "supabase_access_token" {
@@ -43,7 +43,7 @@ variable "project_name" {
 }
 
 variable "production_domain" {
-  description = "Production domain once selected."
+  description = "Production apex domain."
   type        = string
-  default     = null
+  default     = "freddyfounders.com"
 }

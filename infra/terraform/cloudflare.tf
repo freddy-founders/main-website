@@ -1,8 +1,8 @@
 locals {
   cloudflare_resource_model = {
-    deployment_substrate = "Cloudflare Workers static assets or Pages"
+    deployment_substrate = "Cloudflare Workers static assets"
     config_source        = "wrangler.jsonc"
-    terraform_owns       = ["account settings", "DNS/custom domain when known", "future routable resources"]
+    terraform_owns       = ["DNS records", "future account settings", "future routable resources"]
     terraform_does_not_own = [
       "application source code",
       "build artifacts",
@@ -11,5 +11,5 @@ locals {
   }
 }
 
-# Keep Cloudflare deployment config in wrangler.jsonc for v0.
-# Add concrete Terraform resources here once the Cloudflare account/zone/domain are chosen.
+# Worker deployment and custom-domain bindings are owned by wrangler.jsonc.
+# DNS records that must exist for those custom domains are owned here.
