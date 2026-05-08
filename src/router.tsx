@@ -1,4 +1,4 @@
-import { type DependencyList, type FormEvent, useEffect, useState } from 'react';
+import { type DependencyList, type FormEvent, type ReactNode, useEffect, useState } from 'react';
 import { Navigate, Route, Routes } from 'react-router-dom';
 import { listPendingRegistrationRequests, listProfiles, setProfileRole } from './application/admin';
 import { getCurrentSession, sendMagicLink } from './application/auth';
@@ -80,6 +80,52 @@ function useAsyncValue<T>(loader: () => Promise<T>, deps: DependencyList = [load
   return value;
 }
 
+function useCurrentSession() {
+  const [state, setState] = useState<{
+    loading: boolean;
+    session: Awaited<ReturnType<typeof getCurrentSession>>;
+  }>({
+    loading: true,
+    session: null,
+  });
+
+  useEffect(() => {
+    let active = true;
+
+    getCurrentSession().then((session) => {
+      if (active) {
+        setState({ loading: false, session });
+      }
+    });
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  return state;
+}
+
+function PrivateRoute({ children }: { children: ReactNode }) {
+  const { loading, session } = useCurrentSession();
+
+  if (loading) {
+    return (
+      <PageShell>
+        <Panel title="Loading" eyebrow="Private Community">
+          <Notice>Checking Freddy Founders access...</Notice>
+        </Panel>
+      </PageShell>
+    );
+  }
+
+  if (!session) {
+    return <Navigate to="/login" replace />;
+  }
+
+  return children;
+}
+
 const halifaxDate = new Intl.DateTimeFormat('en-US', {
   day: '2-digit',
   month: 'short',
@@ -109,7 +155,7 @@ function eventMarkerParts(startsAt: string) {
 }
 
 function eventMeta(event: EventSummary): string {
-  return `${event.locationLabel} / public / ${event.capacityStatus}`;
+  return `${event.locationLabel} / member / ${event.capacityStatus}`;
 }
 
 function eventTags(event: EventSummary) {
@@ -132,12 +178,40 @@ function Shell() {
       <Topbar />
       <Routes>
         <Route path="/" element={<Navigate to="/events" replace />} />
-        <Route path="/events" element={<EventsPage />} />
-        <Route path="/people" element={<PeoplePage />} />
-        <Route path="/companies" element={<CompaniesPage />} />
+        <Route
+          path="/events"
+          element={
+            <PrivateRoute>
+              <EventsPage />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/people"
+          element={
+            <PrivateRoute>
+              <PeoplePage />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/companies"
+          element={
+            <PrivateRoute>
+              <CompaniesPage />
+            </PrivateRoute>
+          }
+        />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
-        <Route path="/admin" element={<AdminPage />} />
+        <Route
+          path="/admin"
+          element={
+            <PrivateRoute>
+              <AdminPage />
+            </PrivateRoute>
+          }
+        />
       </Routes>
     </AppChrome>
   );
@@ -173,10 +247,10 @@ function EventsPage() {
           eyebrow="Events"
           title="Events"
           context="Upcoming Freddy Founders events. Plain rows, useful metadata, RSVP/register first. No feed, no comments, no ranking."
-          notes={['Default public front page', 'Public / no login needed']}
+          notes={['Private member app surface', 'Login required']}
           stats={[
             { value: String(upcomingEvents.length).padStart(2, '0'), label: 'Upcoming events' },
-            { value: String(people.length).padStart(2, '0'), label: 'Public people' },
+            { value: String(people.length).padStart(2, '0'), label: 'Member-visible people' },
           ]}
         />
         <BoardSection label="Filters" meta="Events" tone="black">
@@ -265,7 +339,7 @@ function PeoplePage() {
 
   return (
     <PageShell>
-      <Panel title="Directory" eyebrow="Public-Safe Rows">
+      <Panel title="Directory" eyebrow="Member-Visible Rows">
         <RowList>
           {people.map((person) => (
             <Row
@@ -281,9 +355,9 @@ function PeoplePage() {
       </Panel>
       <Rail
         title="Directory rules"
-        copy="People rows must be published, public, and consented for directory display. This is context, not a social feed."
+        copy="People rows must be published and consented for member directory display. This is context, not a social feed."
         stats={[
-          { value: String(people.length).padStart(2, '0'), label: 'Public people' },
+          { value: String(people.length).padStart(2, '0'), label: 'Member-visible people' },
           { value: 'YES', label: 'Consent gate' },
         ]}
       />
@@ -314,7 +388,7 @@ function CompaniesPage() {
         title="Company index"
         copy="Companies are a compact network directory, not a vendor marketplace or marketing landing page."
         stats={[
-          { value: String(companies.length).padStart(2, '0'), label: 'Public companies' },
+          { value: String(companies.length).padStart(2, '0'), label: 'Member companies' },
           { value: 'NO', label: 'Marketplace' },
         ]}
       />
@@ -340,8 +414,9 @@ function LoginPage() {
 
   return (
     <PageShell>
-      <Panel title="Login" eyebrow="Returning Member / Admin">
+      <Panel title="Login" eyebrow="Private Community">
         <form onSubmit={handleSubmit}>
+          <Notice>Freddy Founders is a private community of Atlantic Canadian founders.</Notice>
           <FieldGrid>
             <Field label="Email">
               <TextInput
@@ -360,8 +435,8 @@ function LoginPage() {
         </form>
       </Panel>
       <Rail
-        title="No browsing wall"
-        copy="Public Events, People, and Companies remain available. Login is for returning members, organizers, and admins."
+        title="Apply for access"
+        copy="The Freddy Founders app is private. Apply for access if you are a founder of the company you are registering."
       />
     </PageShell>
   );
@@ -392,7 +467,7 @@ function RegisterPage() {
         isCompanyFounder: form.get('is-company-founder') === 'on',
       });
       formElement.reset();
-      setStatus('Request received. Organizers will review the company and founder claim.');
+      setStatus('Application received. Admins will review the company and founder claim.');
     } catch (error) {
       setStatus(error instanceof Error ? error.message : 'Could not submit registration request.');
     }
@@ -400,7 +475,7 @@ function RegisterPage() {
 
   return (
     <PageShell>
-      <Panel title="Registration" eyebrow="Founder Company Request">
+      <Panel title="Application" eyebrow="Request Access">
         <form onSubmit={handleSubmit}>
           <FieldGrid>
             <Field label="Name">
@@ -445,14 +520,14 @@ function RegisterPage() {
             <Field label="Public directory consent">
               <TextInput type="checkbox" name="public-directory-consent" />
             </Field>
-            <Button type="submit">Request access</Button>
+            <Button type="submit">Apply for access</Button>
             {status ? <Notice>{status}</Notice> : null}
           </FieldGrid>
         </form>
       </Panel>
       <Rail
-        title="Company-bound trust"
-        copy="Signup creates a pending founder request and ensures a private company object from the website domain. Public directory display remains reviewed and consent-aware."
+        title="Private community"
+        copy="Application creates a pending founder request and ensures a private company object from the website domain. Admin approval is required before app access."
       />
     </PageShell>
   );

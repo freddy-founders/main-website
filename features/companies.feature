@@ -1,7 +1,8 @@
-Feature: Public companies directory
-  Companies is a compact YC-style directory, not a vendor marketplace.
+Feature: Private companies directory
+  Companies is a member-visible YC-style directory, not a public vendor marketplace.
 
-  Scenario: Visitor can browse public company rows
-    Given public browsing is open
-    When a visitor lists public companies
-    Then the visitor sees public company directory rows
+  Scenario: Member can browse company rows
+    Given the app is private
+    And an approved member is logged in
+    When the member lists companies
+    Then the member sees company directory rows

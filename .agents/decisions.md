@@ -327,3 +327,25 @@ Rules:
 - first-owner bootstrap is explicit/manual by profile email for v0.
 
 Rationale: this keeps the user-facing role ladder simple while enforcing the single-owner invariant separately from ordinary role assignment.
+
+## 2026-05-08 — Freddy Founders app is private; registration is application for access
+
+The current access model supersedes earlier public-browsing decisions for Events, People, and Companies.
+
+Public anonymous surfaces:
+
+- Login
+- Application/Register
+
+Private authenticated app surfaces:
+
+- Events
+- People
+- Companies
+- Admin
+
+Login copy should state: "Freddy Founders is a private community of Atlantic Canadian founders." Registration should use application/access language, not generic signup language. The application flow creates a pending founder/company request, and admin approval is required before app access.
+
+Supabase RLS should enforce this, not just React routing: published Events, People, Companies, and event link rows are readable only with an authenticated session. The application/register mutation remains public so founders can apply for access.
+
+Rationale: Freddy Founders is a trust-bound private founder community, not a public directory with an admin back office.

@@ -1,6 +1,6 @@
 # Freddy Founders
 
-Everything-as-Code scaffold for the Freddy Founders public network hub.
+Everything-as-Code scaffold for the Freddy Founders private founder community app.
 
 ## Stack
 
@@ -46,7 +46,7 @@ Dependency install-script approvals are code-owned in `package.json` / `pnpm-wor
 
 Copy `.env.example` to `.env` when real Supabase/Cloudflare values exist. Never commit service-role keys or provider tokens. `VITE_DATA_SOURCE=auto` uses Supabase when browser-safe Supabase env vars exist and falls back to in-memory fixtures otherwise; set `VITE_DATA_SOURCE=supabase` to fail fast if Supabase values are missing.
 
-Auth uses Supabase passwordless magic links for returning members/admins. Public registration is a founder/company trust request: users provide company name + website, affirm they are a founder, and the app normalizes the website domain to create/ensure a private pending-review company object before admin review.
+Auth uses Supabase passwordless magic links for approved members/admins. Public application/register is a founder/company trust request: users provide company name + website, affirm they are a founder, and the app normalizes the website domain to create/ensure a private pending-review company object before admin approval.
 
 Admin governance uses cumulative roles: `member < organizer < admin`. The `/admin` page is admin-only, only admins can promote users to admin, organizers can promote members to organizers through the backend role boundary, and ownership is a singleton capability stored separately from the role. The owner must remain an admin; first-owner bootstrap is a manual setup SQL operation once the owner profile exists.
 
@@ -156,11 +156,12 @@ Secrets are intentionally not committed; the bootstrap script and workflow are t
 
 ## Product boundaries
 
-- Public pages: Events, People, Companies, Login, Register.
-- Events is the default front page.
-- Public browsing must not require login.
-- People/Companies are public-safe directories.
-- Admin is maintenance-oriented.
+- Public pages: Login and Application/Register.
+- Private app surfaces: Events, People, Companies, Admin.
+- Events is the default private app surface after login.
+- Anonymous visitors must not browse Events, People, or Companies.
+- People/Companies are member-visible directories.
+- Admin is maintenance-oriented and admin-only.
 - No forum, resource library, social graph, messaging, voting, ranking, payment, or ticketing scope.
 
 ## Design Library

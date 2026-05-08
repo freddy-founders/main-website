@@ -1,7 +1,8 @@
-Feature: Public people directory
-  People is a public-safe Bookface-like directory, not a social feed.
+Feature: Private people directory
+  People is a member-visible Bookface-like directory, not a public social feed.
 
-  Scenario: Visitor sees only consented public people
-    Given public browsing is open
-    When a visitor lists public people
-    Then only consented public people are returned
+  Scenario: Member sees only consented people
+    Given the app is private
+    And an approved member is logged in
+    When the member lists people
+    Then only consented people are returned

@@ -16,6 +16,8 @@ export class FreddyWorld extends World {
   registrationError: unknown = null;
   profiles: ProfileAccount[] = [];
   roleChangeAllowed = false;
+  memberLoggedIn = false;
+  loginRequired = false;
 }
 
 setWorldConstructor(FreddyWorld);
