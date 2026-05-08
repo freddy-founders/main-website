@@ -6,6 +6,7 @@ insert into public.companies (
   stage,
   location_label,
   website_url,
+  company_domain,
   publication_status,
   visibility
 )
@@ -17,6 +18,7 @@ values (
   'Seed',
   'Fredericton, NB',
   'https://example.com',
+  'example.com',
   'published',
   'public'
 )
@@ -131,19 +133,25 @@ insert into public.registration_requests (
   name,
   email,
   company_name,
+  company_website_url,
+  company_domain,
   role,
   founder_context,
   topics,
   public_directory_consent,
+  is_company_founder,
   status
 )
 values (
   'Pending Member',
   'pending@example.com',
   'Example Co',
+  'https://example.com',
+  'example.com',
   'Founder',
   'Exploring Freddy Founders membership.',
   array['Fundraising'],
   false,
+  true,
   'pending'
 );

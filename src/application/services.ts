@@ -1,11 +1,17 @@
 import { getEventRegistrationAction } from '../domain/events';
-import type { AccountRole } from '../domain/accounts';
+import {
+  prepareFounderRegistrationRequest,
+  type AccountRole,
+  type RegistrationRequestInput,
+} from '../domain/accounts';
 import type { CompanyRepository } from '../ports/companies';
+import type { AuthPort } from '../ports/auth';
 import type { EventRepository } from '../ports/events';
 import type { PersonRepository } from '../ports/people';
 import type { RegistrationRequestRepository } from '../ports/registrationRequests';
 
 export interface ApplicationPorts {
+  auth: AuthPort;
   events: EventRepository;
   people: PersonRepository;
   companies: CompanyRepository;
@@ -14,6 +20,12 @@ export interface ApplicationPorts {
 
 export function createApplicationServices(ports: ApplicationPorts) {
   return {
+    auth: {
+      getCurrentSession: () => ports.auth.getCurrentSession(),
+      sendMagicLink: (email: string, redirectTo?: string) =>
+        ports.auth.signInWithEmail(email, redirectTo),
+      signOut: () => ports.auth.signOut(),
+    },
     events: {
       async listPublicEvents() {
         const events = await ports.events.listPublicEvents();
@@ -49,6 +61,13 @@ export function createApplicationServices(ports: ApplicationPorts) {
     companies: {
       listPublicCompanies: () => ports.companies.listPublicCompanies(),
       getPublicCompanyBySlug: (slug: string) => ports.companies.getPublicCompanyBySlug(slug),
+    },
+    registrationRequests: {
+      async createRegistrationRequest(input: RegistrationRequestInput) {
+        return ports.registrationRequests.createRegistrationRequest(
+          prepareFounderRegistrationRequest(input),
+        );
+      },
     },
     admin: {
       listPendingRegistrationRequests: (role: AccountRole | null) =>

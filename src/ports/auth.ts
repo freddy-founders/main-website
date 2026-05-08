@@ -8,6 +8,6 @@ export interface AuthSession {
 
 export interface AuthPort {
   getCurrentSession(): Promise<AuthSession | null>;
-  signInWithEmail(email: string): Promise<void>;
+  signInWithEmail(email: string, redirectTo?: string): Promise<void>;
   signOut(): Promise<void>;
 }

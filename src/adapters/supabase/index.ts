@@ -1,5 +1,6 @@
 export { createBrowserSupabaseClient, getSupabaseBrowserConfig } from './client';
 import type { SupabaseClient } from '@supabase/supabase-js';
+import { SupabaseAuthPort } from './auth';
 import { SupabaseCompanyRepository } from './companyRepository';
 import type { Database } from './database.types';
 import { SupabaseEventRepository } from './eventRepository';
@@ -8,6 +9,7 @@ import { SupabaseRegistrationRequestRepository } from './registrationRequestRepo
 
 export function createSupabaseAdapters(client: SupabaseClient<Database>) {
   return {
+    auth: new SupabaseAuthPort(client),
     events: new SupabaseEventRepository(client),
     people: new SupabasePersonRepository(client),
     companies: new SupabaseCompanyRepository(client),

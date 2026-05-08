@@ -1,9 +1,11 @@
-import { useEffect, useState } from 'react';
+import { type DependencyList, type FormEvent, useEffect, useState } from 'react';
 import { Navigate, Route, Routes } from 'react-router-dom';
 import { listPendingRegistrationRequests } from './application/admin';
+import { getCurrentSession, sendMagicLink } from './application/auth';
 import { listPublicCompanies } from './application/companies';
 import { listPublicEvents } from './application/events';
 import { listPublicPeople } from './application/people';
+import { createRegistrationRequest } from './application/registrationRequests';
 import {
   AppChrome,
   BoardAside,
@@ -20,6 +22,7 @@ import {
   ScheduleRow,
   SpecPanel,
   Panel,
+  Notice,
   Rail,
   Row,
   RowList,
@@ -37,7 +40,7 @@ type PublicEventView = EventSummary & {
   registrationAction: EventRegistrationAction;
 };
 
-function useAsyncList<T>(loader: () => Promise<T[]>): T[] {
+function useAsyncList<T>(loader: () => Promise<T[]>, deps: DependencyList = [loader]): T[] {
   const [items, setItems] = useState<T[]>([]);
 
   useEffect(() => {
@@ -52,9 +55,29 @@ function useAsyncList<T>(loader: () => Promise<T[]>): T[] {
     return () => {
       active = false;
     };
-  }, [loader]);
+  }, deps);
 
   return items;
+}
+
+function useAsyncValue<T>(loader: () => Promise<T>, deps: DependencyList = [loader]): T | null {
+  const [value, setValue] = useState<T | null>(null);
+
+  useEffect(() => {
+    let active = true;
+
+    loader().then((loadedValue) => {
+      if (active) {
+        setValue(loadedValue);
+      }
+    });
+
+    return () => {
+      active = false;
+    };
+  }, deps);
+
+  return value;
 }
 
 const halifaxDate = new Intl.DateTimeFormat('en-US', {
@@ -300,20 +323,36 @@ function CompaniesPage() {
 }
 
 function LoginPage() {
+  const [email, setEmail] = useState('');
+  const [status, setStatus] = useState<string | null>(null);
+
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setStatus('Sending magic link...');
+    await sendMagicLink(email, `${window.location.origin}/admin`);
+    setStatus('Check your email for the Freddy Founders login link.');
+  }
+
   return (
     <PageShell>
       <Panel title="Login" eyebrow="Returning Member / Admin">
-        <FieldGrid>
-          <Field label="Email">
-            <TextInput
-              type="email"
-              name="email"
-              autoComplete="email"
-              placeholder="you@company.com"
-            />
-          </Field>
-          <Button type="button">Continue</Button>
-        </FieldGrid>
+        <form onSubmit={handleSubmit}>
+          <FieldGrid>
+            <Field label="Email">
+              <TextInput
+                type="email"
+                name="email"
+                autoComplete="email"
+                placeholder="you@company.com"
+                required
+                value={email}
+                onChange={(event) => setEmail(event.currentTarget.value)}
+              />
+            </Field>
+            <Button type="submit">Send magic link</Button>
+            {status ? <Notice>{status}</Notice> : null}
+          </FieldGrid>
+        </form>
       </Panel>
       <Rail
         title="No browsing wall"
@@ -324,56 +363,116 @@ function LoginPage() {
 }
 
 function RegisterPage() {
+  const [status, setStatus] = useState<string | null>(null);
+
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const form = new FormData(event.currentTarget);
+    setStatus('Submitting founder/company request...');
+    await createRegistrationRequest({
+      name: String(form.get('name') ?? ''),
+      email: String(form.get('email') ?? ''),
+      companyName: String(form.get('company-name') ?? ''),
+      companyWebsiteUrl: String(form.get('company-website-url') ?? ''),
+      role: String(form.get('role') ?? ''),
+      founderContext: String(form.get('founder-context') ?? ''),
+      topics: String(form.get('topics') ?? '')
+        .split(',')
+        .map((topic) => topic.trim())
+        .filter(Boolean),
+      publicDirectoryConsent: form.get('public-directory-consent') === 'on',
+      isCompanyFounder: form.get('is-company-founder') === 'on',
+    });
+    event.currentTarget.reset();
+    setStatus('Request received. Organizers will review the company and founder claim.');
+  }
+
   return (
     <PageShell>
-      <Panel title="Registration" eyebrow="Request Account">
-        <FieldGrid>
-          <Field label="Name">
-            <TextInput name="name" autoComplete="name" placeholder="Full name" />
-          </Field>
-          <Field label="Email">
-            <TextInput
-              type="email"
-              name="email"
-              autoComplete="email"
-              placeholder="you@company.com"
-            />
-          </Field>
-          <Field label="Company / Role">
-            <TextInput name="company-role" placeholder="Company / founder, operator, investor" />
-          </Field>
-          <Field label="Founder context">
-            <TextArea
-              name="founder-context"
-              rows={4}
-              placeholder="What context should organizers review?"
-            />
-          </Field>
-          <Button type="button">Request access</Button>
-        </FieldGrid>
+      <Panel title="Registration" eyebrow="Founder Company Request">
+        <form onSubmit={handleSubmit}>
+          <FieldGrid>
+            <Field label="Name">
+              <TextInput name="name" autoComplete="name" placeholder="Full name" required />
+            </Field>
+            <Field label="Email">
+              <TextInput
+                type="email"
+                name="email"
+                autoComplete="email"
+                placeholder="you@company.com"
+                required
+              />
+            </Field>
+            <Field label="Company">
+              <TextInput name="company-name" placeholder="Company name" required />
+            </Field>
+            <Field label="Company website">
+              <TextInput
+                type="url"
+                name="company-website-url"
+                placeholder="https://company.com"
+                required
+              />
+            </Field>
+            <Field label="Role">
+              <TextInput name="role" placeholder="Founder / CEO / CTO" />
+            </Field>
+            <Field label="Topics">
+              <TextInput name="topics" placeholder="AI, fundraising, local services" />
+            </Field>
+            <Field label="Founder context">
+              <TextArea
+                name="founder-context"
+                rows={4}
+                placeholder="What context should organizers review?"
+              />
+            </Field>
+            <Field label="Founder affirmation">
+              <TextInput type="checkbox" name="is-company-founder" required />
+            </Field>
+            <Field label="Public directory consent">
+              <TextInput type="checkbox" name="public-directory-consent" />
+            </Field>
+            <Button type="submit">Request access</Button>
+            {status ? <Notice>{status}</Notice> : null}
+          </FieldGrid>
+        </form>
       </Panel>
       <Rail
-        title="Consent-aware"
-        copy="Registration creates an account request. Public directory display is reviewed and consent-aware, not automatic."
+        title="Company-bound trust"
+        copy="Signup creates a pending founder request and ensures a private company object from the website domain. Public directory display remains reviewed and consent-aware."
       />
     </PageShell>
   );
 }
 
 function AdminPage() {
-  const requests = useAsyncList<RegistrationRequest>(() =>
-    listPendingRegistrationRequests('admin'),
+  const session = useAsyncValue(getCurrentSession, []);
+  const role = session?.role ?? null;
+  const requests = useAsyncList<RegistrationRequest>(
+    () => listPendingRegistrationRequests(role),
+    [role],
   );
 
   return (
     <PageShell>
       <Panel title="Admin Maintenance" eyebrow="Simple CRUD">
+        {session ? (
+          <Notice>
+            Signed in as {session.email} / {session.role}
+          </Notice>
+        ) : (
+          <Notice>Sign in as an organizer or admin to review pending requests.</Notice>
+        )}
         <RowList>
           {requests.map((request) => (
             <Row
               key={request.id}
               title={request.name}
-              meta={`${request.status} / registration request`}
+              meta={`${request.status} / ${request.companyDomain} / founder: ${
+                request.isCompanyFounder ? 'yes' : 'no'
+              }`}
             >
               {request.founderContext}
             </Row>
@@ -382,10 +481,10 @@ function AdminPage() {
       </Panel>
       <Rail
         title="Maintenance only"
-        copy="Admin should stay focused on Events, People, Companies, and pending registrations. No dashboard sprawl."
+        copy="Admin should stay focused on Events, People, Companies, and pending founder/company registrations. No dashboard sprawl."
         stats={[
           { value: String(requests.length).padStart(2, '0'), label: 'Pending' },
-          { value: 'CRUD', label: 'Scope' },
+          { value: role ?? 'NONE', label: 'Session role' },
         ]}
       />
     </PageShell>

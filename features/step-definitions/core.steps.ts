@@ -4,6 +4,7 @@ import { listPendingRegistrationRequests } from '../../src/application/admin';
 import { listPublicCompanies } from '../../src/application/companies';
 import { listPublicEvents } from '../../src/application/events';
 import { listPublicPeople } from '../../src/application/people';
+import { createRegistrationRequest } from '../../src/application/registrationRequests';
 import type { FreddyWorld } from '../support/world';
 
 Given('public browsing is open', function () {
@@ -66,4 +67,59 @@ Then('pending registration requests are returned for review', function (this: Fr
     this.registrationRequests.length > 0,
     'expected admin to see pending registration requests',
   );
+});
+
+When(
+  'a founder requests access for company website {string}',
+  async function (this: FreddyWorld, companyWebsiteUrl: string) {
+    await createRegistrationRequest({
+      name: 'New Founder',
+      email: 'new-founder@example.com',
+      companyName: 'New Co',
+      companyWebsiteUrl,
+      role: 'Founder',
+      founderContext: 'Building a company in Fredericton.',
+      topics: ['AI'],
+      publicDirectoryConsent: false,
+      isCompanyFounder: true,
+    });
+  },
+);
+
+When(
+  'a non-founder tries to request access for company website {string}',
+  async function (this: FreddyWorld, companyWebsiteUrl: string) {
+    try {
+      await createRegistrationRequest({
+        name: 'Operator',
+        email: 'operator@example.com',
+        companyName: 'Operator Co',
+        companyWebsiteUrl,
+        role: 'Operator',
+        founderContext: 'I work with founders.',
+        topics: ['Operations'],
+        publicDirectoryConsent: false,
+        isCompanyFounder: false,
+      });
+    } catch (error) {
+      this.registrationError = error;
+    }
+  },
+);
+
+Then(
+  'an admin sees a pending founder request for domain {string}',
+  async function (this: FreddyWorld, companyDomain: string) {
+    this.registrationRequests = await listPendingRegistrationRequests('admin');
+    assert.ok(
+      this.registrationRequests.some(
+        (request) => request.companyDomain === companyDomain && request.isCompanyFounder,
+      ),
+      `expected a pending founder request for ${companyDomain}`,
+    );
+  },
+);
+
+Then('the signup request is rejected', function (this: FreddyWorld) {
+  assert.ok(this.registrationError instanceof Error, 'expected registration to fail');
 });

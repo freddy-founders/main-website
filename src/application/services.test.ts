@@ -49,6 +49,13 @@ const companyRecords: CompanySummary[] = [
 
 function createPortsFixture(): ApplicationPorts {
   return {
+    auth: {
+      async getCurrentSession() {
+        return null;
+      },
+      async signInWithEmail() {},
+      async signOut() {},
+    },
     events: {
       async listPublicEvents() {
         return eventRecords;
@@ -74,6 +81,7 @@ function createPortsFixture(): ApplicationPorts {
       },
     },
     registrationRequests: {
+      async createRegistrationRequest() {},
       async listPendingRegistrationRequests(role) {
         if (role !== 'admin') {
           return [];
@@ -84,8 +92,13 @@ function createPortsFixture(): ApplicationPorts {
             id: 'request-1',
             name: 'Pending Founder',
             email: 'pending@example.com',
+            companyName: 'Example Co',
+            companyWebsiteUrl: 'https://example.com',
+            companyDomain: 'example.com',
+            role: 'Founder',
             topics: ['Fundraising'],
             publicDirectoryConsent: false,
+            isCompanyFounder: true,
             status: 'pending',
             createdAt: '2026-05-08T00:00:00.000Z',
           },
@@ -116,5 +129,44 @@ describe('application services', () => {
 
     await expect(services.admin.listPendingRegistrationRequests(null)).resolves.toEqual([]);
     await expect(services.admin.listPendingRegistrationRequests('admin')).resolves.toHaveLength(1);
+  });
+
+  it('normalizes founder registration requests before the adapter boundary', async () => {
+    const ports = createPortsFixture();
+    let capturedCompanyDomain = '';
+    ports.registrationRequests.createRegistrationRequest = async (input) => {
+      capturedCompanyDomain = input.companyDomain;
+    };
+    const services = createApplicationServices(ports);
+
+    await services.registrationRequests.createRegistrationRequest({
+      name: ' Pending Founder ',
+      email: 'PENDING@EXAMPLE.COM',
+      companyName: ' Example Co ',
+      companyWebsiteUrl: 'www.example.com/join',
+      role: ' Founder ',
+      founderContext: ' Building in Fredericton. ',
+      topics: [' AI ', ''],
+      publicDirectoryConsent: false,
+      isCompanyFounder: true,
+    });
+
+    expect(capturedCompanyDomain).toBe('example.com');
+  });
+
+  it('rejects registration requests without founder affirmation', async () => {
+    const services = createApplicationServices(createPortsFixture());
+
+    await expect(
+      services.registrationRequests.createRegistrationRequest({
+        name: 'Pending Founder',
+        email: 'pending@example.com',
+        companyName: 'Example Co',
+        companyWebsiteUrl: 'https://example.com',
+        topics: [],
+        publicDirectoryConsent: false,
+        isCompanyFounder: false,
+      }),
+    ).rejects.toThrow('Founder affirmation is required.');
   });
 });

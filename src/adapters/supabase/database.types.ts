@@ -11,6 +11,7 @@ export type Database = {
       companies: {
         Row: {
           category: string | null;
+          company_domain: string | null;
           created_at: string;
           id: string;
           location_label: string | null;
@@ -25,6 +26,7 @@ export type Database = {
         };
         Insert: {
           category?: string | null;
+          company_domain?: string | null;
           created_at?: string;
           id?: string;
           location_label?: string | null;
@@ -39,6 +41,7 @@ export type Database = {
         };
         Update: {
           category?: string | null;
+          company_domain?: string | null;
           created_at?: string;
           id?: string;
           location_label?: string | null;
@@ -281,10 +284,13 @@ export type Database = {
       registration_requests: {
         Row: {
           company_name: string | null;
+          company_domain: string;
           created_at: string;
           email: string;
           founder_context: string | null;
+          company_website_url: string;
           id: string;
+          is_company_founder: boolean;
           name: string;
           public_directory_consent: boolean;
           reviewed_at: string | null;
@@ -295,10 +301,13 @@ export type Database = {
         };
         Insert: {
           company_name?: string | null;
+          company_domain: string;
           created_at?: string;
           email: string;
           founder_context?: string | null;
+          company_website_url: string;
           id?: string;
+          is_company_founder?: boolean;
           name: string;
           public_directory_consent?: boolean;
           reviewed_at?: string | null;
@@ -309,10 +318,13 @@ export type Database = {
         };
         Update: {
           company_name?: string | null;
+          company_domain?: string;
           created_at?: string;
           email?: string;
           founder_context?: string | null;
+          company_website_url?: string;
           id?: string;
+          is_company_founder?: boolean;
           name?: string;
           public_directory_consent?: boolean;
           reviewed_at?: string | null;
@@ -337,6 +349,21 @@ export type Database = {
     };
     Functions: {
       is_admin_or_organizer: { Args: never; Returns: boolean };
+      submit_founder_registration_request: {
+        Args: {
+          request_name: string;
+          request_email: string;
+          request_company_name: string;
+          request_company_website_url: string;
+          request_company_domain: string;
+          request_role: string | null;
+          request_founder_context: string | null;
+          request_topics: string[];
+          request_public_directory_consent: boolean;
+          request_is_company_founder: boolean;
+        };
+        Returns: string;
+      };
     };
     Enums: {
       account_role: 'visitor' | 'member' | 'organizer' | 'admin';

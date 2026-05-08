@@ -46,6 +46,8 @@ Dependency install-script approvals are code-owned in `package.json` / `pnpm-wor
 
 Copy `.env.example` to `.env` when real Supabase/Cloudflare values exist. Never commit service-role keys or provider tokens. `VITE_DATA_SOURCE=auto` uses Supabase when browser-safe Supabase env vars exist and falls back to in-memory fixtures otherwise; set `VITE_DATA_SOURCE=supabase` to fail fast if Supabase values are missing.
 
+Auth uses Supabase passwordless magic links for returning members/admins. Public registration is a founder/company trust request: users provide company name + website, affirm they are a founder, and the app normalizes the website domain to create/ensure a private pending-review company object before admin review.
+
 ## Development
 
 ```bash
@@ -105,7 +107,7 @@ pull_request -> CI gates + Terraform validation
 push main    -> CI gates -> Terraform validation -> optional Terraform auto-apply -> Cloudflare deploy
 ```
 
-Terraform auto-apply is feature-flagged by the GitHub variable `TERRAFORM_AUTO_APPLY`. It should remain `false` until `CLOUDFLARE_API_TOKEN` has Cloudflare Zone DNS read/edit permission for `freddyfounders.com`.
+Terraform auto-apply is feature-flagged by the GitHub variable `TERRAFORM_AUTO_APPLY`; production is currently configured with the flag enabled. Keep it enabled only while `CLOUDFLARE_API_TOKEN` has both Workers deploy permission and Cloudflare Zone DNS read/edit permission for `freddyfounders.com`.
 
 The deploy job uses `wrangler.jsonc` as the deployment source of truth and publishes the built `dist/` artifact as a Cloudflare Worker with static assets.
 

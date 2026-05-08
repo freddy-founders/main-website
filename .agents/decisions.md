@@ -290,3 +290,18 @@ CI gates -> Terraform validation -> optional Terraform auto-apply -> Cloudflare 
 The current prod Terraform ownership surface is intentionally narrow: optional future Cloudflare account/provider resources only. `freddyfounders.com` and `www.freddyfounders.com` host records are already owned by the Worker custom-domain model in `wrangler.jsonc`, so Terraform does not create duplicate DNS records for them.
 
 The first auto-apply attempt proved the original deploy token only had Workers permissions and could not read DNS records. After broadening the existing token's permissions, auto-apply can reuse the main `CLOUDFLARE_API_TOKEN`. The second and third apply attempts proved the token can now read Cloudflare DNS and that the real conflict was ownership: Workers already manages the host-level record. Terraform therefore no longer tries to import or create `www` directly. This is acceptable for the current prod surface. Before using Terraform for stateful or sensitive resources, add durable remote state/locking and avoid storing sensitive provider-created values in transient CI state.
+
+## 2026-05-08 — Signup is founder/company trust ingestion
+
+Auth is passwordless magic-link login through Supabase Auth for returning members, organizers, and admins. Public browsing remains open.
+
+Registration is not a generic social signup. It is a founder/company trust request:
+
+- the user must provide name and email
+- the user must provide company name and company website
+- the user must affirm "I am a founder of this company"
+- the application normalizes the website hostname into a company domain
+- the Supabase mutation boundary creates a pending registration request and ensures a private `pending_review` company object by domain
+- public directory visibility remains consent-aware and admin-reviewed
+
+Rationale: Freddy Founders membership is company-bound founder context, not anonymous account creation. The company domain is the stable dedupe key for creating/reusing company objects while keeping new records private until reviewed.

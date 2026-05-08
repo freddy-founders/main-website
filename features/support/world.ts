@@ -13,6 +13,7 @@ export class FreddyWorld extends World {
   people: PersonSummary[] = [];
   companies: CompanySummary[] = [];
   registrationRequests: RegistrationRequest[] = [];
+  registrationError: unknown = null;
 }
 
 setWorldConstructor(FreddyWorld);
