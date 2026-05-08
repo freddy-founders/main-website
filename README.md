@@ -86,7 +86,7 @@ CLOUDFLARE_API_TOKEN=... CLOUDFLARE_ACCOUNT_ID=... mise run tf:plan
 CLOUDFLARE_API_TOKEN=... CLOUDFLARE_ACCOUNT_ID=... mise run tf:apply
 ```
 
-Terraform owns DNS and optional provider/project setup. Supabase schema/RLS remains migration-owned in `supabase/migrations/`. Trunk can auto-apply production Terraform before deployment when `TERRAFORM_AUTO_APPLY=true` and GitHub secret `CLOUDFLARE_API_TOKEN` includes both Workers deploy permissions and Cloudflare Zone DNS read/edit permission for `freddyfounders.com`. Current prod Terraform treats the `www` DNS record as ensure-if-missing until durable remote state exists; add remote state before using Terraform for stateful/sensitive resources.
+Terraform owns optional future provider/account setup. Supabase schema/RLS remains migration-owned in `supabase/migrations/`. Trunk can auto-apply production Terraform before deployment when `TERRAFORM_AUTO_APPLY=true` and GitHub secret `CLOUDFLARE_API_TOKEN` includes both Workers deploy permissions and Cloudflare Zone DNS read/edit permission for `freddyfounders.com`. Workers custom-domain bindings already own the live host records, so Terraform intentionally does not create duplicate DNS records for `freddyfounders.com` or `www.freddyfounders.com`. Add remote state before using Terraform for stateful/sensitive resources.
 
 The pre-commit hook runs:
 
