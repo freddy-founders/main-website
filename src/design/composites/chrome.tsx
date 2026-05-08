@@ -14,8 +14,17 @@ export function Topbar() {
       <div className="ff-command-line">
         <div className="ff-brand">Freddy Founders</div>
         <nav className="ff-primary-nav" aria-label="Primary navigation">
+          <span className="ff-primary-separator" aria-hidden="true">
+            /
+          </span>
           <NavLink to="/events">Events</NavLink>
+          <span className="ff-primary-separator" aria-hidden="true">
+            /
+          </span>
           <NavLink to="/people">People</NavLink>
+          <span className="ff-primary-separator" aria-hidden="true">
+            /
+          </span>
           <NavLink to="/companies">Companies</NavLink>
         </nav>
       </div>

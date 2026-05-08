@@ -100,9 +100,11 @@
   text-transform: uppercase;
 }
 
-.ff-primary-nav a::before {
+.ff-primary-separator {
   color: var(--color-accent-soft);
-  content: '/';
+  font-family: var(--font-mono);
+  font-size: var(--size-text-xs);
+  letter-spacing: var(--letter-mono);
   margin: 0 var(--space-xs);
 }
 

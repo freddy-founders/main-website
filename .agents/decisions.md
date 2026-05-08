@@ -231,7 +231,7 @@ The Freddy Founders topbar, stripe, and page content should share one centered f
 
 The canonical visual mode remains Swiss Industrial Print from the brutalist reference: light paper substrate, brick accent, hard borders, deterministic grid, square corners, uppercase metadata, and tight compartmentalized information density.
 
-The Freddy Founders mark is `FF`, and the repo-owned site icon is a white-on-brick `FF` square at `public/site-icon.svg`. Primary navigation belongs in the left command line as `Freddy Founders / Events / People / Companies`; Login/Register remain boxed account actions on the right. The current page is indicated with an underline, not a filled nav button.
+The Freddy Founders mark is `FF`, and the repo-owned site icon is a white-on-brick `FF` square at `public/site-icon.svg`. Primary navigation belongs in the left command line as `Freddy Founders / Events / People / Companies`; Login/Register remain boxed account actions on the right. The current page is indicated with an underline, not a filled nav button. Slash separators are structural dividers and must never receive active-page underlines.
 
 Rationale: the page should read as one engineered artifact, not disconnected full-width header plus floating content card.
 
