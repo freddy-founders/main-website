@@ -110,7 +110,7 @@ description = "Auto-apply production Terraform using provider env vars"
 run = "pnpm tf:apply"
 [tasks.deploy]
 description = "Build and deploy via Wrangler"
-run = "pnpm deploy"
+run = "pnpm run deploy"
 
 [tasks."bootstrap:github-cd"]
 description = "Configure GitHub Actions secret/variable for Cloudflare CD from local env"

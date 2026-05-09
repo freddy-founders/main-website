@@ -46,7 +46,14 @@ Dependency install-script approvals are code-owned in `package.json` / `pnpm-wor
 
 Copy `.env.example` to `.env` when real Supabase/Cloudflare values exist. Never commit service-role keys or provider tokens. `VITE_DATA_SOURCE=auto` uses Supabase when browser-safe Supabase env vars exist and falls back to in-memory fixtures otherwise; set `VITE_DATA_SOURCE=supabase` to fail fast if Supabase values are missing.
 
-Auth uses Supabase passwordless magic links for approved members/admins. Public application/register is a founder/company trust request: users provide company name + website, affirm they are a founder, and the app normalizes the website domain to create/ensure a private pending-review company object before admin approval.
+Production auth is approved-profile-only:
+
+- the public `/register` form creates a pending founder/company application
+- admins approve or archive applications
+- approval creates or reuses the Supabase Auth user, upserts an active profile, and records audit state
+- approved users request passwordless magic links from `/login`
+- login uses `shouldCreateUser: false`, so login never becomes signup
+- deactivated profiles lose private app access and cannot receive login links
 
 Admin governance uses cumulative roles: `member < organizer < admin`. The `/admin` page is admin-only, only admins can promote users to admin, organizers can promote members to organizers through the backend role boundary, and ownership is a singleton capability stored separately from the role. The owner must remain an admin; first-owner bootstrap is a manual setup SQL operation once the owner profile exists.
 
@@ -81,6 +88,14 @@ mise run supabase:activate
 ```
 
 Then set `VITE_DATA_SOURCE=supabase`, `VITE_SUPABASE_URL`, and `VITE_SUPABASE_ANON_KEY` in the deployment environment to use Supabase-backed adapters.
+
+Production auth lifecycle also needs a server-only Worker secret:
+
+```bash
+pnpm exec wrangler secret put SUPABASE_SERVICE_ROLE_KEY
+```
+
+This secret is used only by the Cloudflare Worker admin API for approval/archive/deactivation and must never be exposed to the browser.
 
 Terraform local setup:
 
@@ -152,7 +167,9 @@ Local deployment uses the same code path:
 CLOUDFLARE_API_TOKEN=... CLOUDFLARE_ACCOUNT_ID=... mise run deploy
 ```
 
-Secrets are intentionally not committed; the bootstrap script and workflow are the code-owned automation boundary.
+`mise run deploy` delegates to `pnpm run deploy`, which builds the app and runs `wrangler deploy`.
+
+Secrets are intentionally not committed; the bootstrap script, Worker secret, and workflow are the code-owned automation boundary.
 
 ## Product boundaries
 

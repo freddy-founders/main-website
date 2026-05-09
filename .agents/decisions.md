@@ -349,3 +349,38 @@ Login copy should state: "Freddy Founders is a private community of Atlantic Can
 Supabase RLS should enforce this, not just React routing: published Events, People, Companies, and event link rows are readable only with an authenticated session. The application/register mutation remains public so founders can apply for access.
 
 Rationale: Freddy Founders is a trust-bound private founder community, not a public directory with an admin back office.
+
+## 2026-05-09 — Production auth is approved-profile-only and admin approval runs through a Worker boundary
+
+Freddy Founders production auth is now explicitly split into:
+
+- public application
+- admin approval or archive
+- approved-member magic-link login
+
+The production enforcement model is:
+
+- Supabase global self-serve signup is disabled.
+- Supabase email login remains enabled so approved users can request magic links.
+- The browser login form only attempts `signInWithOtp(...)` for emails that already have an active profile.
+- `shouldCreateUser: false` is required on magic-link requests so login cannot create users.
+- Private app reads are enforced by RLS through `current_profile_has_access()`, not just React routing.
+- Profiles now carry `access_status = active | deactivated`.
+- Deactivated profiles lose private read access and must not receive login links.
+
+Admin approval/archive/deactivation is not performed directly from the browser with a service-role credential. It runs through a Cloudflare Worker API backed by the repo-owned `src/worker.ts` boundary and a Worker secret `SUPABASE_SERVICE_ROLE_KEY`.
+
+On approval:
+
+- the Worker finds or creates the Supabase Auth user
+- upserts an active `profiles` row with `role = member`
+- marks the registration request approved
+- records `approved_profile_id` and `approval_notice_sent_at`
+- writes an `access_audit` entry
+
+On archive/deactivation:
+
+- the Worker updates the durable state in Supabase
+- writes `access_audit`
+
+Rationale: this preserves the private-community rule that login must never be signup, keeps service-role operations server-side only, and gives the app a durable, inspectable access lifecycle in production.
