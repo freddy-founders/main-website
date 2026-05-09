@@ -430,7 +430,7 @@ function LoginPage() {
     <AuthEntryShell
       eyebrow="Private community"
       title="Member login"
-      subtitle="Approved Freddy Founders members can request a private login link."
+      subtitle="You will receive a login link to your email."
       secondary={
         <>
           <p>Need access?</p>
