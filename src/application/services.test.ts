@@ -55,6 +55,7 @@ const profileRecords: ProfileAccount[] = [
     name: 'Admin Founder',
     role: 'admin',
     isOwner: true,
+    accessStatus: 'active',
     createdAt: '2026-05-08T00:00:00.000Z',
   },
   {
@@ -63,6 +64,7 @@ const profileRecords: ProfileAccount[] = [
     name: 'Organizer Founder',
     role: 'organizer',
     isOwner: false,
+    accessStatus: 'active',
     createdAt: '2026-05-08T00:00:00.000Z',
   },
   {
@@ -71,6 +73,7 @@ const profileRecords: ProfileAccount[] = [
     name: 'Member Founder',
     role: 'member',
     isOwner: false,
+    accessStatus: 'active',
     createdAt: '2026-05-08T00:00:00.000Z',
   },
 ];
@@ -124,6 +127,7 @@ function createPortsFixture(): ApplicationPorts {
             companyDomain: 'example.com',
             role: 'Founder',
             topics: ['Fundraising'],
+            atlanticCanadaTie: 'Building from Fredericton.',
             publicDirectoryConsent: false,
             isCompanyFounder: true,
             status: 'pending',
@@ -186,7 +190,7 @@ describe('application services', () => {
       companyName: ' Example Co ',
       companyWebsiteUrl: 'www.example.com/join',
       role: ' Founder ',
-      founderContext: ' Building in Fredericton. ',
+      atlanticCanadaTie: ' Building in Fredericton. ',
       topics: [' AI ', ''],
       publicDirectoryConsent: false,
       isCompanyFounder: true,
@@ -204,6 +208,7 @@ describe('application services', () => {
         email: 'pending@example.com',
         companyName: 'Example Co',
         companyWebsiteUrl: 'https://example.com',
+        atlanticCanadaTie: 'Building in Fredericton.',
         topics: [],
         publicDirectoryConsent: false,
         isCompanyFounder: false,

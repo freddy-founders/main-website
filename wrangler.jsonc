@@ -2,6 +2,7 @@
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "freddy-founders",
   "compatibility_date": "2026-05-08",
+  "main": "src/worker.ts",
   "workers_dev": false,
   "routes": [
     {
@@ -15,6 +16,11 @@
   ],
   "assets": {
     "directory": "./dist",
+    "binding": "ASSETS",
     "not_found_handling": "single-page-application",
+  },
+  "vars": {
+    "SUPABASE_URL": "https://vnhuiwxavsplhbmwvctx.supabase.co",
+    "APP_ORIGIN": "https://freddyfounders.com",
   },
 }

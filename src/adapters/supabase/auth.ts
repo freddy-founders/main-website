@@ -21,7 +21,7 @@ export class SupabaseAuthPort implements AuthPort {
 
     const { data: profile, error: profileError } = await this.client
       .from('profiles')
-      .select('role')
+      .select('role, access_status')
       .eq('id', session.user.id)
       .maybeSingle();
 
@@ -29,17 +29,40 @@ export class SupabaseAuthPort implements AuthPort {
       throw profileError;
     }
 
+    if (!profile || profile.access_status !== 'active') {
+      return null;
+    }
+
     return {
       userId: session.user.id,
       email: session.user.email,
-      role: normalizeAccountRole(profile?.role),
+      role: normalizeAccountRole(profile.role),
+      accessToken: session.access_token,
     };
   }
 
   async signInWithEmail(email: string, redirectTo?: string): Promise<void> {
+    const normalizedEmail = email.trim().toLowerCase();
+    const { data: profile, error: profileError } = await this.client
+      .from('profiles')
+      .select('id, access_status')
+      .ilike('email', normalizedEmail)
+      .maybeSingle();
+
+    if (profileError) {
+      throw profileError;
+    }
+
+    if (!profile || profile.access_status !== 'active') {
+      return;
+    }
+
     const { error } = await this.client.auth.signInWithOtp({
-      email,
-      options: redirectTo ? { emailRedirectTo: redirectTo } : undefined,
+      email: normalizedEmail,
+      options: {
+        shouldCreateUser: false,
+        ...(redirectTo ? { emailRedirectTo: redirectTo } : {}),
+      },
     });
 
     if (error) {

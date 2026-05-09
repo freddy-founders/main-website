@@ -8,6 +8,51 @@ export type Database = {
   };
   public: {
     Tables: {
+      access_audit: {
+        Row: {
+          action: string;
+          actor_profile_id: string | null;
+          created_at: string;
+          id: string;
+          metadata: Json;
+          target_email: string;
+          target_profile_id: string | null;
+        };
+        Insert: {
+          action: string;
+          actor_profile_id?: string | null;
+          created_at?: string;
+          id?: string;
+          metadata?: Json;
+          target_email: string;
+          target_profile_id?: string | null;
+        };
+        Update: {
+          action?: string;
+          actor_profile_id?: string | null;
+          created_at?: string;
+          id?: string;
+          metadata?: Json;
+          target_email?: string;
+          target_profile_id?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'access_audit_actor_profile_id_fkey';
+            columns: ['actor_profile_id'];
+            isOneToOne: false;
+            referencedRelation: 'profiles';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'access_audit_target_profile_id_fkey';
+            columns: ['target_profile_id'];
+            isOneToOne: false;
+            referencedRelation: 'profiles';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
       companies: {
         Row: {
           category: string | null;
@@ -253,8 +298,11 @@ export type Database = {
       };
       profiles: {
         Row: {
+          access_status: string;
           created_at: string;
           email: string;
+          deactivated_at: string | null;
+          deactivated_by: string | null;
           id: string;
           name: string;
           public_directory_consent: boolean;
@@ -262,8 +310,11 @@ export type Database = {
           updated_at: string;
         };
         Insert: {
+          access_status?: string;
           created_at?: string;
           email: string;
+          deactivated_at?: string | null;
+          deactivated_by?: string | null;
           id: string;
           name: string;
           public_directory_consent?: boolean;
@@ -271,8 +322,11 @@ export type Database = {
           updated_at?: string;
         };
         Update: {
+          access_status?: string;
           created_at?: string;
           email?: string;
+          deactivated_at?: string | null;
+          deactivated_by?: string | null;
           id?: string;
           name?: string;
           public_directory_consent?: boolean;
@@ -328,6 +382,9 @@ export type Database = {
       };
       registration_requests: {
         Row: {
+          approval_notice_sent_at: string | null;
+          approved_profile_id: string | null;
+          atlantic_canada_tie: string;
           company_name: string | null;
           company_domain: string;
           created_at: string;
@@ -345,6 +402,9 @@ export type Database = {
           topics: string[];
         };
         Insert: {
+          approval_notice_sent_at?: string | null;
+          approved_profile_id?: string | null;
+          atlantic_canada_tie?: string;
           company_name?: string | null;
           company_domain: string;
           created_at?: string;
@@ -362,6 +422,9 @@ export type Database = {
           topics?: string[];
         };
         Update: {
+          approval_notice_sent_at?: string | null;
+          approved_profile_id?: string | null;
+          atlantic_canada_tie?: string;
           company_name?: string | null;
           company_domain?: string;
           created_at?: string;
@@ -382,6 +445,13 @@ export type Database = {
           {
             foreignKeyName: 'registration_requests_reviewed_by_fkey';
             columns: ['reviewed_by'];
+            isOneToOne: false;
+            referencedRelation: 'profiles';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'registration_requests_approved_profile_id_fkey';
+            columns: ['approved_profile_id'];
             isOneToOne: false;
             referencedRelation: 'profiles';
             referencedColumns: ['id'];
@@ -424,8 +494,34 @@ export type Database = {
     Functions: {
       admin_bootstrap_owner: { Args: { owner_email: string }; Returns: string };
       current_profile_is_owner: { Args: never; Returns: boolean };
+      archive_registration_request: {
+        Args: { request_id: string };
+        Returns: undefined;
+      };
       is_admin: { Args: never; Returns: boolean };
+      current_profile_has_access: { Args: never; Returns: boolean };
       is_admin_or_organizer: { Args: never; Returns: boolean };
+      deactivate_profile: {
+        Args: { target_profile_id: string };
+        Returns: undefined;
+      };
+      mark_registration_request_approved: {
+        Args: {
+          request_id: string;
+          approved_profile: string;
+          notice_sent?: boolean;
+        };
+        Returns: undefined;
+      };
+      record_access_audit: {
+        Args: {
+          audit_action: string;
+          audit_target_email: string;
+          audit_target_profile_id?: string | null;
+          audit_metadata?: Json;
+        };
+        Returns: string;
+      };
       set_profile_role: {
         Args: {
           target_profile_id: string;
@@ -441,6 +537,7 @@ export type Database = {
           request_company_name: string;
           request_company_website_url: string;
           request_company_domain: string;
+          request_atlantic_canada_tie: string;
           request_role: string | null;
           request_founder_context: string | null;
           request_topics: string[];
@@ -462,7 +559,7 @@ export type Database = {
       event_registration_mode: 'external' | 'disabled' | 'internal';
       public_visibility: 'public' | 'members' | 'private';
       publication_status: 'draft' | 'pending_review' | 'published' | 'archived';
-      registration_request_status: 'pending' | 'approved' | 'rejected';
+      registration_request_status: 'pending' | 'approved' | 'archived' | 'rejected';
     };
     CompositeTypes: {
       [_ in never]: never;
@@ -593,7 +690,7 @@ export const Constants = {
       event_registration_mode: ['external', 'disabled', 'internal'],
       public_visibility: ['public', 'members', 'private'],
       publication_status: ['draft', 'pending_review', 'published', 'archived'],
-      registration_request_status: ['pending', 'approved', 'rejected'],
+      registration_request_status: ['pending', 'approved', 'archived', 'rejected'],
     },
   },
 } as const;

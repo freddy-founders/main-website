@@ -38,6 +38,7 @@ describe('founder registration domain rules', () => {
         email: 'operator@example.com',
         companyName: 'Operator Co',
         companyWebsiteUrl: 'https://operator.example',
+        atlanticCanadaTie: 'Building in Atlantic Canada.',
         topics: [],
         publicDirectoryConsent: false,
         isCompanyFounder: false,
@@ -53,7 +54,7 @@ describe('founder registration domain rules', () => {
         companyName: ' Example Co ',
         companyWebsiteUrl: 'www.example.com',
         role: ' Founder ',
-        founderContext: ' Building locally. ',
+        atlanticCanadaTie: ' Building locally. ',
         topics: [' AI ', ''],
         publicDirectoryConsent: true,
         isCompanyFounder: true,
@@ -65,7 +66,7 @@ describe('founder registration domain rules', () => {
       companyDomain: 'example.com',
       role: 'Founder',
       founderContext: 'Building locally.',
-      topics: ['AI'],
+      atlanticCanadaTie: 'Building locally.',
       isCompanyFounder: true,
     });
   });

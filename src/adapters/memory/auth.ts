@@ -12,6 +12,7 @@ export class InMemoryAuthPort implements AuthPort {
       userId: `memory:${email}`,
       email,
       role: email.endsWith('@admin.test') ? 'admin' : 'member',
+      accessToken: `memory-token:${email}`,
     };
   }
 

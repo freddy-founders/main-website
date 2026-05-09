@@ -38,6 +38,7 @@ export class SupabaseProfileRepository implements ProfileRepository {
       name: profile.name,
       role: normalizeAccountRole(profile.role),
       isOwner: profile.id === ownerProfileId,
+      accessStatus: profile.access_status === 'deactivated' ? 'deactivated' : 'active',
       createdAt: profile.created_at,
     }));
   }

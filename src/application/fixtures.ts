@@ -112,6 +112,7 @@ export const profileAccounts: ProfileAccount[] = [
     name: 'Owner Founder',
     role: 'admin',
     isOwner: true,
+    accessStatus: 'active',
     createdAt: '2026-05-08T00:00:00.000Z',
   },
   {
@@ -120,6 +121,7 @@ export const profileAccounts: ProfileAccount[] = [
     name: 'Member Founder',
     role: 'member',
     isOwner: false,
+    accessStatus: 'active',
     createdAt: '2026-05-08T00:00:00.000Z',
   },
 ];
@@ -134,6 +136,7 @@ export const registrationRequests: RegistrationRequest[] = [
     companyDomain: 'example.com',
     role: 'Founder',
     founderContext: 'Exploring Freddy Founders membership.',
+    atlanticCanadaTie: 'Building from Fredericton.',
     topics: ['Fundraising'],
     publicDirectoryConsent: false,
     isCompanyFounder: true,

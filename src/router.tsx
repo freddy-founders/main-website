@@ -1,6 +1,13 @@
 import { type DependencyList, type FormEvent, type ReactNode, useEffect, useState } from 'react';
 import { Navigate, Route, Routes } from 'react-router-dom';
-import { listPendingRegistrationRequests, listProfiles, setProfileRole } from './application/admin';
+import {
+  approveRegistrationRequest,
+  archiveRegistrationRequest,
+  deactivateProfile,
+  listPendingRegistrationRequests,
+  listProfiles,
+  setProfileRole,
+} from './application/admin';
 import { getCurrentSession, sendMagicLink } from './application/auth';
 import { listPublicCompanies } from './application/companies';
 import { listPublicEvents } from './application/events';
@@ -172,48 +179,55 @@ function byStartDateAscending(left: EventSummary, right: EventSummary): number {
   return new Date(left.startsAt).getTime() - new Date(right.startsAt).getTime();
 }
 
-function Shell() {
+function PrivateApp({ children }: { children: ReactNode }) {
   return (
     <AppChrome>
       <Topbar />
-      <Routes>
-        <Route path="/" element={<Navigate to="/events" replace />} />
-        <Route
-          path="/events"
-          element={
-            <PrivateRoute>
-              <EventsPage />
-            </PrivateRoute>
-          }
-        />
-        <Route
-          path="/people"
-          element={
-            <PrivateRoute>
-              <PeoplePage />
-            </PrivateRoute>
-          }
-        />
-        <Route
-          path="/companies"
-          element={
-            <PrivateRoute>
-              <CompaniesPage />
-            </PrivateRoute>
-          }
-        />
-        <Route path="/login" element={<LoginPage />} />
-        <Route path="/register" element={<RegisterPage />} />
-        <Route
-          path="/admin"
-          element={
-            <PrivateRoute>
-              <AdminPage />
-            </PrivateRoute>
-          }
-        />
-      </Routes>
+      <PrivateRoute>{children}</PrivateRoute>
     </AppChrome>
+  );
+}
+
+function Shell() {
+  return (
+    <Routes>
+      <Route path="/" element={<Navigate to="/events" replace />} />
+      <Route
+        path="/events"
+        element={
+          <PrivateApp>
+            <EventsPage />
+          </PrivateApp>
+        }
+      />
+      <Route
+        path="/people"
+        element={
+          <PrivateApp>
+            <PeoplePage />
+          </PrivateApp>
+        }
+      />
+      <Route
+        path="/companies"
+        element={
+          <PrivateApp>
+            <CompaniesPage />
+          </PrivateApp>
+        }
+      />
+      <Route path="/login" element={<LoginPage />} />
+      <Route path="/register" element={<RegisterPage />} />
+      <Route path="/auth/callback" element={<LoginCallbackPage />} />
+      <Route
+        path="/admin"
+        element={
+          <PrivateApp>
+            <AdminPage />
+          </PrivateApp>
+        }
+      />
+    </Routes>
   );
 }
 
@@ -402,13 +416,16 @@ function LoginPage() {
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    setStatus('Sending magic link...');
+    setStatus(
+      'If approved, check your email for a Freddy Founders login link. Otherwise, apply for access.',
+    );
 
     try {
-      await sendMagicLink(email, `${window.location.origin}/admin`);
-      setStatus('Check your email for the Freddy Founders login link.');
-    } catch (error) {
-      setStatus(error instanceof Error ? error.message : 'Could not send login link.');
+      await sendMagicLink(email, `${window.location.origin}/auth/callback`);
+    } catch {
+      setStatus(
+        'If approved, check your email for a Freddy Founders login link. Otherwise, apply for access.',
+      );
     }
   }
 
@@ -442,6 +459,22 @@ function LoginPage() {
   );
 }
 
+function LoginCallbackPage() {
+  const { loading, session } = useCurrentSession();
+
+  if (loading) {
+    return (
+      <PageShell>
+        <Panel title="Completing login" eyebrow="Private Community">
+          <Notice>Checking Freddy Founders access...</Notice>
+        </Panel>
+      </PageShell>
+    );
+  }
+
+  return <Navigate to={session?.role === 'admin' ? '/admin' : '/events'} replace />;
+}
+
 function RegisterPage() {
   const [status, setStatus] = useState<string | null>(null);
 
@@ -457,6 +490,7 @@ function RegisterPage() {
         email: String(form.get('email') ?? ''),
         companyName: String(form.get('company-name') ?? ''),
         companyWebsiteUrl: String(form.get('company-website-url') ?? ''),
+        atlanticCanadaTie: String(form.get('atlantic-canada-tie') ?? ''),
         role: String(form.get('role') ?? ''),
         founderContext: String(form.get('founder-context') ?? ''),
         topics: String(form.get('topics') ?? '')
@@ -501,6 +535,14 @@ function RegisterPage() {
                 required
               />
             </Field>
+            <Field label="Atlantic Canada tie">
+              <TextArea
+                name="atlantic-canada-tie"
+                rows={3}
+                placeholder="Where are you based, or what is your Atlantic Canada community tie?"
+                required
+              />
+            </Field>
             <Field label="Role">
               <TextInput name="role" placeholder="Founder / CEO / CTO" />
             </Field>
@@ -537,6 +579,7 @@ function AdminPage() {
   const session = useAsyncValue(getCurrentSession, []);
   const role = session?.role ?? null;
   const [refreshKey, setRefreshKey] = useState(0);
+  const [actionStatus, setActionStatus] = useState<string | null>(null);
   const requests = useAsyncList<RegistrationRequest>(
     () => listPendingRegistrationRequests(role),
     [role, refreshKey],
@@ -549,6 +592,39 @@ function AdminPage() {
       role: nextRole,
     });
     setRefreshKey((value) => value + 1);
+  }
+
+  async function handleApproveRequest(request: RegistrationRequest) {
+    setActionStatus(`Approving ${request.email}...`);
+    try {
+      await approveRegistrationRequest(request.id);
+      setActionStatus(`Approved ${request.email}. They can now request a login link.`);
+      setRefreshKey((value) => value + 1);
+    } catch (error) {
+      setActionStatus(error instanceof Error ? error.message : 'Could not approve application.');
+    }
+  }
+
+  async function handleArchiveRequest(request: RegistrationRequest) {
+    setActionStatus(`Archiving ${request.email}...`);
+    try {
+      await archiveRegistrationRequest(request.id);
+      setActionStatus(`Archived ${request.email}.`);
+      setRefreshKey((value) => value + 1);
+    } catch (error) {
+      setActionStatus(error instanceof Error ? error.message : 'Could not archive application.');
+    }
+  }
+
+  async function handleDeactivateProfile(profile: ProfileAccount) {
+    setActionStatus(`Deactivating ${profile.email}...`);
+    try {
+      await deactivateProfile(profile.id);
+      setActionStatus(`Deactivated ${profile.email}.`);
+      setRefreshKey((value) => value + 1);
+    } catch (error) {
+      setActionStatus(error instanceof Error ? error.message : 'Could not deactivate profile.');
+    }
   }
 
   if (role !== 'admin') {
@@ -574,6 +650,7 @@ function AdminPage() {
             Signed in as {session.email} / {session.role}
           </Notice>
         ) : null}
+        {actionStatus ? <Notice>{actionStatus}</Notice> : null}
         <RowList>
           {requests.map((request) => (
             <Row
@@ -582,8 +659,22 @@ function AdminPage() {
               meta={`${request.status} / ${request.companyDomain} / founder: ${
                 request.isCompanyFounder ? 'yes' : 'no'
               }`}
+              actions={
+                <>
+                  <Button type="button" onClick={() => handleApproveRequest(request)}>
+                    Approve
+                  </Button>
+                  <Button
+                    type="button"
+                    tone="neutral"
+                    onClick={() => handleArchiveRequest(request)}
+                  >
+                    Archive
+                  </Button>
+                </>
+              }
             >
-              {request.founderContext}
+              {request.atlanticCanadaTie}
             </Row>
           ))}
         </RowList>
@@ -594,7 +685,7 @@ function AdminPage() {
             <Row
               key={profile.id}
               title={profile.name}
-              meta={`${profile.email} / ${profile.role}${profile.isOwner ? ' / owner' : ''}`}
+              meta={`${profile.email} / ${profile.role} / ${profile.accessStatus}${profile.isOwner ? ' / owner' : ''}`}
               actions={
                 <>
                   {profile.role !== 'organizer' ? (
@@ -618,6 +709,15 @@ function AdminPage() {
                       onClick={() => handleSetProfileRole(profile, 'member')}
                     >
                       Demote to member
+                    </Button>
+                  ) : null}
+                  {!profile.isOwner && profile.accessStatus === 'active' ? (
+                    <Button
+                      type="button"
+                      tone="neutral"
+                      onClick={() => handleDeactivateProfile(profile)}
+                    >
+                      Deactivate
                     </Button>
                   ) : null}
                 </>

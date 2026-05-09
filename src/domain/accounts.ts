@@ -1,5 +1,5 @@
 export type AccountRole = 'member' | 'organizer' | 'admin';
-export type RegistrationRequestStatus = 'pending' | 'approved' | 'rejected';
+export type RegistrationRequestStatus = 'pending' | 'approved' | 'archived' | 'rejected';
 
 export function normalizeAccountRole(role: string | null | undefined): AccountRole {
   if (role === 'admin' || role === 'organizer') {
@@ -31,6 +31,7 @@ export interface ProfileAccount {
   name: string;
   role: AccountRole;
   isOwner: boolean;
+  accessStatus: 'active' | 'deactivated';
   createdAt: string;
 }
 
@@ -50,7 +51,8 @@ export interface RegistrationRequestInput {
   companyWebsiteUrl: string;
   role?: string;
   founderContext?: string;
-  topics: string[];
+  atlanticCanadaTie: string;
+  topics?: string[];
   publicDirectoryConsent: boolean;
   isCompanyFounder: boolean;
 }
@@ -102,7 +104,12 @@ export function prepareFounderRegistrationRequest(
     throw new Error('Company name is required.');
   }
 
+  if (input.atlanticCanadaTie.trim().length === 0) {
+    throw new Error('Atlantic Canada tie is required.');
+  }
+
   const companyDomain = normalizeCompanyDomain(input.companyWebsiteUrl);
+  const atlanticCanadaTie = input.atlanticCanadaTie.trim();
 
   return {
     ...input,
@@ -111,8 +118,9 @@ export function prepareFounderRegistrationRequest(
     companyName: input.companyName.trim(),
     companyWebsiteUrl: input.companyWebsiteUrl.trim(),
     role: input.role?.trim() || undefined,
-    founderContext: input.founderContext?.trim() || undefined,
-    topics: input.topics.map((topic) => topic.trim()).filter(Boolean),
+    founderContext: atlanticCanadaTie,
+    atlanticCanadaTie,
+    topics: input.topics?.map((topic) => topic.trim()).filter(Boolean) ?? [],
     companyDomain,
   };
 }
