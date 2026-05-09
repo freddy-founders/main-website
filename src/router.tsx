@@ -14,6 +14,7 @@ import { listPublicEvents } from './application/events';
 import { listPublicPeople } from './application/people';
 import { createRegistrationRequest } from './application/registrationRequests';
 import {
+  AuthEntryShell,
   AppChrome,
   BoardAside,
   BoardColumn,
@@ -416,46 +417,48 @@ function LoginPage() {
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    setStatus(
-      'If approved, check your email for a Freddy Founders login link. Otherwise, apply for access.',
-    );
+    setStatus('If this email has approved access, a login link has been sent.');
 
     try {
       await sendMagicLink(email, `${window.location.origin}/auth/callback`);
     } catch {
-      setStatus(
-        'If approved, check your email for a Freddy Founders login link. Otherwise, apply for access.',
-      );
+      setStatus('If this email has approved access, a login link has been sent.');
     }
   }
 
   return (
-    <PageShell>
-      <Panel title="Login" eyebrow="Private Community">
-        <form onSubmit={handleSubmit}>
-          <Notice>Freddy Founders is a private community of Atlantic Canadian founders.</Notice>
-          <FieldGrid>
-            <Field label="Email">
-              <TextInput
-                type="email"
-                name="email"
-                autoComplete="email"
-                placeholder="you@company.com"
-                required
-                value={email}
-                onChange={(event) => setEmail(event.currentTarget.value)}
-              />
-            </Field>
-            <Button type="submit">Send magic link</Button>
-            {status ? <Notice>{status}</Notice> : null}
-          </FieldGrid>
-        </form>
-      </Panel>
-      <Rail
-        title="Apply for access"
-        copy="The Freddy Founders app is private. Apply for access if you are a founder of the company you are registering."
-      />
-    </PageShell>
+    <AuthEntryShell
+      eyebrow="Private community"
+      title="Member login"
+      subtitle="Approved Freddy Founders members can request a private login link."
+      secondary={
+        <>
+          <p>Need access?</p>
+          <ButtonLink href="/register" tone="neutral">
+            Apply for access
+          </ButtonLink>
+        </>
+      }
+      footer="Access is approval-based. Login never creates a new account."
+    >
+      <form onSubmit={handleSubmit}>
+        <FieldGrid>
+          <Field label="Email address">
+            <TextInput
+              type="email"
+              name="email"
+              autoComplete="email"
+              placeholder="you@company.com"
+              required
+              value={email}
+              onChange={(event) => setEmail(event.currentTarget.value)}
+            />
+          </Field>
+          <Button type="submit">Send login link</Button>
+          {status ? <Notice>{status}</Notice> : null}
+        </FieldGrid>
+      </form>
+    </AuthEntryShell>
   );
 }
 
@@ -464,11 +467,13 @@ function LoginCallbackPage() {
 
   if (loading) {
     return (
-      <PageShell>
-        <Panel title="Completing login" eyebrow="Private Community">
-          <Notice>Checking Freddy Founders access...</Notice>
-        </Panel>
-      </PageShell>
+      <AuthEntryShell
+        eyebrow="Private community"
+        title="Completing login"
+        subtitle="Checking Freddy Founders access..."
+      >
+        <Notice>Hold tight while we verify this login link.</Notice>
+      </AuthEntryShell>
     );
   }
 
@@ -482,7 +487,7 @@ function RegisterPage() {
     event.preventDefault();
     const formElement = event.currentTarget;
     const form = new FormData(formElement);
-    setStatus('Submitting founder/company request...');
+    setStatus('Submitting application...');
 
     try {
       await createRegistrationRequest({
@@ -491,87 +496,83 @@ function RegisterPage() {
         companyName: String(form.get('company-name') ?? ''),
         companyWebsiteUrl: String(form.get('company-website-url') ?? ''),
         atlanticCanadaTie: String(form.get('atlantic-canada-tie') ?? ''),
-        role: String(form.get('role') ?? ''),
-        founderContext: String(form.get('founder-context') ?? ''),
-        topics: String(form.get('topics') ?? '')
-          .split(',')
-          .map((topic) => topic.trim())
-          .filter(Boolean),
+        role: '',
+        founderContext: '',
+        topics: [],
         publicDirectoryConsent: form.get('public-directory-consent') === 'on',
         isCompanyFounder: form.get('is-company-founder') === 'on',
       });
       formElement.reset();
-      setStatus('Application received. Admins will review the company and founder claim.');
+      setStatus('Application received. Admins will review it.');
     } catch (error) {
-      setStatus(error instanceof Error ? error.message : 'Could not submit registration request.');
+      setStatus(error instanceof Error ? error.message : 'Could not submit application.');
     }
   }
 
   return (
-    <PageShell>
-      <Panel title="Application" eyebrow="Request Access">
-        <form onSubmit={handleSubmit}>
-          <FieldGrid>
-            <Field label="Name">
-              <TextInput name="name" autoComplete="name" placeholder="Full name" required />
-            </Field>
-            <Field label="Email">
-              <TextInput
-                type="email"
-                name="email"
-                autoComplete="email"
-                placeholder="you@company.com"
-                required
-              />
-            </Field>
-            <Field label="Company">
-              <TextInput name="company-name" placeholder="Company name" required />
-            </Field>
-            <Field label="Company website">
-              <TextInput
-                type="url"
-                name="company-website-url"
-                placeholder="https://company.com"
-                required
-              />
-            </Field>
-            <Field label="Atlantic Canada tie">
-              <TextArea
-                name="atlantic-canada-tie"
-                rows={3}
-                placeholder="Where are you based, or what is your Atlantic Canada community tie?"
-                required
-              />
-            </Field>
-            <Field label="Role">
-              <TextInput name="role" placeholder="Founder / CEO / CTO" />
-            </Field>
-            <Field label="Topics">
-              <TextInput name="topics" placeholder="AI, fundraising, local services" />
-            </Field>
-            <Field label="Founder context">
-              <TextArea
-                name="founder-context"
-                rows={4}
-                placeholder="What context should organizers review?"
-              />
-            </Field>
-            <Field label="Founder affirmation">
-              <TextInput type="checkbox" name="is-company-founder" required />
-            </Field>
-            <Field label="Public directory consent">
-              <TextInput type="checkbox" name="public-directory-consent" />
-            </Field>
-            <Button type="submit">Apply for access</Button>
-            {status ? <Notice>{status}</Notice> : null}
-          </FieldGrid>
-        </form>
-      </Panel>
-      <Rail
-        title="Private community"
-        copy="Application creates a pending founder request and ensures a private company object from the website domain. Admin approval is required before app access."
-      />
-    </PageShell>
+    <AuthEntryShell
+      eyebrow="Request access"
+      title="Apply for access"
+      subtitle="Freddy Founders is a private community for Atlantic Canadian founders."
+      secondary={
+        <>
+          <p>Already approved?</p>
+          <ButtonLink href="/login" tone="neutral">
+            Return to login
+          </ButtonLink>
+        </>
+      }
+      footer="Submitting an application does not create login access."
+    >
+      <form onSubmit={handleSubmit}>
+        <FieldGrid>
+          <Field label="Name">
+            <TextInput name="name" autoComplete="name" placeholder="Full name" required />
+          </Field>
+          <Field label="Email address">
+            <TextInput
+              type="email"
+              name="email"
+              autoComplete="email"
+              placeholder="you@company.com"
+              required
+            />
+          </Field>
+          <Field label="Company">
+            <TextInput name="company-name" placeholder="Company name" required />
+          </Field>
+          <Field label="Company website">
+            <TextInput
+              type="url"
+              name="company-website-url"
+              placeholder="https://company.com"
+              required
+            />
+          </Field>
+          <Field label="Atlantic Canada tie">
+            <TextArea
+              name="atlantic-canada-tie"
+              rows={3}
+              placeholder="Where are you based, or what is your Atlantic Canada community tie?"
+              required
+            />
+          </Field>
+          <Field label="Founder affirmation">
+            <TextInput type="checkbox" name="is-company-founder" required />
+          </Field>
+          <details>
+            <summary>Optional visibility</summary>
+            <FieldGrid>
+              <Field label="Public directory consent">
+                <TextInput type="checkbox" name="public-directory-consent" />
+              </Field>
+            </FieldGrid>
+          </details>
+          <Button type="submit">Submit application</Button>
+          {status ? <Notice>{status}</Notice> : null}
+        </FieldGrid>
+      </form>
+    </AuthEntryShell>
   );
 }
 

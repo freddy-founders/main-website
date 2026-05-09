@@ -60,6 +60,13 @@ export const designComponentRegistry = [
     allowedInRoutes: true,
   },
   {
+    name: 'AuthEntryShell',
+    category: 'composite',
+    status: 'canonical',
+    purpose: 'Centered public auth entry shell for login and application access pages.',
+    allowedInRoutes: true,
+  },
+  {
     name: 'AppChrome',
     category: 'composite',
     status: 'canonical',

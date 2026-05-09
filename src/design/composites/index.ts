@@ -1,3 +1,4 @@
+export * from './auth-entry';
 export * from './board';
 export * from './chrome';
 export * from './form-layout';
