@@ -257,6 +257,56 @@ export const actionCapabilities = {
       required: ['bdd', 'unit', 'static-ui', 'rendered-ui', 'mbt', 'contract'],
     },
   },
+  navigateAdminIntegrations: {
+    id: 'navigate-admin-integrations',
+    label: 'Navigate to admin integrations',
+    kind: 'navigation',
+    actor: 'admin',
+    surface: '/admin/integrations',
+    risk: 'low',
+    auth: 'admin',
+    boundary: 'React route /admin/integrations',
+    workflow: null,
+    verification: {
+      required: ['bdd', 'static-ui', 'rendered-ui'],
+    },
+  },
+  connectGoogleAiIntegration: {
+    id: 'connect-google-ai-integration',
+    label: 'Connect Google AI integration',
+    kind: 'mutation',
+    actor: 'admin',
+    surface: '/admin/integrations',
+    risk: 'high',
+    auth: 'admin',
+    boundary: 'POST /api/admin/integrations/google-ai/oauth/start',
+    workflow: null,
+    verification: {
+      required: ['bdd', 'unit', 'static-ui', 'rendered-ui', 'contract'],
+      mbtExempt: {
+        reason:
+          'Provider OAuth setup is an external integration handshake, not an app-domain state machine.',
+      },
+    },
+  },
+  disconnectGoogleAiIntegration: {
+    id: 'disconnect-google-ai-integration',
+    label: 'Disconnect Google AI integration',
+    kind: 'mutation',
+    actor: 'admin',
+    surface: '/admin/integrations',
+    risk: 'high',
+    auth: 'admin',
+    boundary: 'POST /api/admin/integrations/google-ai/disconnect',
+    workflow: null,
+    verification: {
+      required: ['bdd', 'unit', 'static-ui', 'rendered-ui', 'contract'],
+      mbtExempt: {
+        reason:
+          'Provider disconnection is a bounded integration toggle, not an app-domain state machine.',
+      },
+    },
+  },
 } as const satisfies Record<string, ActionCapability>;
 
 export type UserActionKey = keyof typeof actionCapabilities;
@@ -510,6 +560,18 @@ export const productCapabilities = {
       userActions.resetMemberPassword,
     ],
     workflows: ['admin-governance'],
+  },
+  adminIntegrations: {
+    id: 'admin-integrations',
+    label: 'Admin integrations',
+    tag: '@capability.admin-integrations',
+    cucumberFeatures: ['features/admin-integrations.feature'],
+    requiredActions: [
+      userActions.navigateAdminIntegrations,
+      userActions.connectGoogleAiIntegration,
+      userActions.disconnectGoogleAiIntegration,
+    ],
+    workflows: [],
   },
   memberEvents: {
     id: 'member-events',

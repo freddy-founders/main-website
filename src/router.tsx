@@ -3,11 +3,14 @@ import { Navigate, Route, Routes, useNavigate } from 'react-router-dom';
 import {
   approveRegistrationRequest,
   archiveRegistrationRequest,
+  disconnectGoogleAiIntegration,
+  getGoogleAiIntegrationStatus,
   deactivateProfile,
   listPendingRegistrationRequests,
   listProfiles,
   resetProfilePassword,
   setProfileRole,
+  startGoogleAiIntegration,
 } from './application/admin';
 import { completePasswordReset, getCurrentSession, signInWithPassword } from './application/auth';
 import { listPublicCompanies } from './application/companies';
@@ -49,6 +52,13 @@ import {
   passwordResetPageContract,
   registerPageContract,
 } from './domain/authPages';
+import {
+  buildGoogleAiIntegrationStatusCopy,
+  defaultGoogleAiLocation,
+  defaultGoogleAiModel,
+  googleAiIntegrationContract,
+  type GoogleAiIntegrationStatus,
+} from './domain/googleAiIntegration';
 import { userActions } from './domain/userActions';
 
 type PublicEventView = EventSummary & {
@@ -237,6 +247,14 @@ function Shell() {
         element={
           <PrivateApp>
             <AdminPage />
+          </PrivateApp>
+        }
+      />
+      <Route
+        path="/admin/integrations"
+        element={
+          <PrivateApp>
+            <AdminIntegrationsPage />
           </PrivateApp>
         }
       />
@@ -759,6 +777,13 @@ function AdminPage() {
           </Notice>
         ) : null}
         {actionStatus ? <Notice>{actionStatus}</Notice> : null}
+        <ButtonLink
+          href="/admin/integrations"
+          tone="neutral"
+          data-user-action={userActions.navigateAdminIntegrations}
+        >
+          Manage integrations
+        </ButtonLink>
         <RowList>
           {requests.map((request) => (
             <Row
@@ -866,6 +891,149 @@ function AdminPage() {
         stats={[
           { value: String(requests.length).padStart(2, '0'), label: 'Pending' },
           { value: String(profiles.length).padStart(2, '0'), label: 'Profiles' },
+        ]}
+      />
+    </PageShell>
+  );
+}
+
+function AdminIntegrationsPage() {
+  const session = useAsyncValue(getCurrentSession, []);
+  const role = session?.role ?? null;
+  const [refreshKey, setRefreshKey] = useState(0);
+  const [actionStatus, setActionStatus] = useState<string | null>(null);
+  const integrationStatus = useAsyncValue<GoogleAiIntegrationStatus>(getGoogleAiIntegrationStatus, [
+    refreshKey,
+  ]);
+  const callbackStatus =
+    typeof window === 'undefined'
+      ? null
+      : new URLSearchParams(window.location.search).get('google_ai');
+
+  async function handleConnect(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const form = new FormData(event.currentTarget);
+    setActionStatus('Starting Google OAuth...');
+
+    try {
+      const result = await startGoogleAiIntegration({
+        googleCloudProjectId: String(form.get('google-cloud-project-id') ?? ''),
+        googleCloudLocation: String(form.get('google-cloud-location') ?? ''),
+        modelId: String(form.get('google-ai-model-id') ?? ''),
+      });
+      if (typeof window !== 'undefined') {
+        window.location.assign(result.authorizationUrl);
+      }
+    } catch (error) {
+      setActionStatus(error instanceof Error ? error.message : 'Could not start Google OAuth.');
+    }
+  }
+
+  async function handleDisconnect() {
+    setActionStatus('Disconnecting Google AI...');
+
+    try {
+      await disconnectGoogleAiIntegration();
+      setActionStatus('Google AI disconnected.');
+      setRefreshKey((value) => value + 1);
+    } catch (error) {
+      setActionStatus(error instanceof Error ? error.message : 'Could not disconnect Google AI.');
+    }
+  }
+
+  if (role !== 'admin') {
+    return (
+      <PageShell>
+        <Panel title={googleAiIntegrationContract.pageTitle} eyebrow="Admin Only">
+          <Notice>Admin access required. Sign in with an admin account to continue.</Notice>
+        </Panel>
+        <Rail
+          title="Integration boundary"
+          copy="Provider credentials can change application-intake behavior, so integrations are admin-only."
+          stats={[{ value: role ?? 'NONE', label: 'Session role' }]}
+        />
+      </PageShell>
+    );
+  }
+
+  const statusCopy = integrationStatus
+    ? buildGoogleAiIntegrationStatusCopy(integrationStatus)
+    : 'Loading Google AI integration status...';
+
+  return (
+    <PageShell>
+      <Panel
+        title={googleAiIntegrationContract.pageTitle}
+        eyebrow={googleAiIntegrationContract.pageEyebrow}
+      >
+        {callbackStatus ? <Notice>Google AI OAuth result: {callbackStatus}</Notice> : null}
+        <Notice>{statusCopy}</Notice>
+        {actionStatus ? <Notice>{actionStatus}</Notice> : null}
+        <FieldList
+          items={[
+            'Provider / Google Vertex AI / Gemini Google Search grounding',
+            `Connected account / ${integrationStatus?.googleAccountEmail ?? 'Not connected'}`,
+            `Project / ${integrationStatus?.googleCloudProjectId ?? 'Not connected'}`,
+            `Missing config / ${
+              integrationStatus && integrationStatus.missingConfig.length > 0
+                ? integrationStatus.missingConfig.join(', ')
+                : 'None'
+            }`,
+          ]}
+        />
+      </Panel>
+      <Panel title={googleAiIntegrationContract.connectTitle} eyebrow="OAuth Setup">
+        <form onSubmit={handleConnect} data-user-action={userActions.connectGoogleAiIntegration}>
+          <FieldGrid>
+            <Field label={googleAiIntegrationContract.projectIdLabel}>
+              <TextInput
+                name="google-cloud-project-id"
+                placeholder="freddy-founders-123"
+                required
+              />
+            </Field>
+            <Field label={googleAiIntegrationContract.locationLabel}>
+              <TextInput
+                name="google-cloud-location"
+                placeholder={integrationStatus?.googleCloudLocation ?? defaultGoogleAiLocation}
+                defaultValue={integrationStatus?.googleCloudLocation ?? defaultGoogleAiLocation}
+                required
+              />
+            </Field>
+            <Field label={googleAiIntegrationContract.modelLabel}>
+              <TextInput
+                name="google-ai-model-id"
+                placeholder={integrationStatus?.modelId ?? defaultGoogleAiModel}
+                defaultValue={integrationStatus?.modelId ?? defaultGoogleAiModel}
+                required
+              />
+            </Field>
+            <Button type="submit" data-user-action={userActions.connectGoogleAiIntegration}>
+              {googleAiIntegrationContract.connectActionLabel}
+            </Button>
+          </FieldGrid>
+        </form>
+      </Panel>
+      <Panel title={googleAiIntegrationContract.disconnectTitle} eyebrow="Provider Control">
+        <p>
+          Disconnecting Google AI removes the active provider connection. Existing applications
+          remain unchanged.
+        </p>
+        <Button
+          type="button"
+          tone="neutral"
+          data-user-action={userActions.disconnectGoogleAiIntegration}
+          onClick={handleDisconnect}
+        >
+          {googleAiIntegrationContract.disconnectActionLabel}
+        </Button>
+      </Panel>
+      <Rail
+        title="Credential model"
+        copy="Freddy owns the OAuth client. An admin grants a Google refresh token. The Worker encrypts the token and calls official Vertex AI APIs server-side."
+        stats={[
+          { value: integrationStatus?.connected ? 'YES' : 'NO', label: 'Connected' },
+          { value: integrationStatus?.configured ? 'YES' : 'NO', label: 'Configured' },
         ]}
       />
     </PageShell>

@@ -7,7 +7,16 @@ import { pathToFileURL } from 'node:url';
 const rootDir = process.cwd();
 const manifestFile = path.join(rootDir, 'src', 'domain', 'userActions.ts');
 const routerFile = path.join(rootDir, 'src', 'router.tsx');
-const routes = ['/', '/events', '/people', '/companies', '/login', '/register', '/admin'];
+const routes = [
+  '/',
+  '/events',
+  '/people',
+  '/companies',
+  '/login',
+  '/register',
+  '/admin',
+  '/admin/integrations',
+];
 const errors = [];
 
 const { actionCapabilities } = await import(pathToFileURL(manifestFile).href);

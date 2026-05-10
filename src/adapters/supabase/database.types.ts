@@ -227,6 +227,109 @@ export type Database = {
         };
         Relationships: [];
       };
+      integration_connections: {
+        Row: {
+          connected_at: string;
+          connected_by_profile_id: string | null;
+          disconnected_at: string | null;
+          encrypted_refresh_token: string;
+          google_account_email: string;
+          google_cloud_location: string;
+          google_cloud_project_id: string;
+          id: string;
+          last_validated_at: string | null;
+          model_id: string;
+          provider: string;
+          scopes: string[];
+          status: string;
+          updated_at: string;
+        };
+        Insert: {
+          connected_at?: string;
+          connected_by_profile_id?: string | null;
+          disconnected_at?: string | null;
+          encrypted_refresh_token: string;
+          google_account_email: string;
+          google_cloud_location?: string;
+          google_cloud_project_id: string;
+          id?: string;
+          last_validated_at?: string | null;
+          model_id?: string;
+          provider: string;
+          scopes?: string[];
+          status?: string;
+          updated_at?: string;
+        };
+        Update: {
+          connected_at?: string;
+          connected_by_profile_id?: string | null;
+          disconnected_at?: string | null;
+          encrypted_refresh_token?: string;
+          google_account_email?: string;
+          google_cloud_location?: string;
+          google_cloud_project_id?: string;
+          id?: string;
+          last_validated_at?: string | null;
+          model_id?: string;
+          provider?: string;
+          scopes?: string[];
+          status?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'integration_connections_connected_by_profile_id_fkey';
+            columns: ['connected_by_profile_id'];
+            isOneToOne: false;
+            referencedRelation: 'profiles';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      integration_oauth_states: {
+        Row: {
+          actor_profile_id: string | null;
+          consumed_at: string | null;
+          created_at: string;
+          expires_at: string;
+          google_cloud_location: string;
+          google_cloud_project_id: string;
+          model_id: string;
+          provider: string;
+          state: string;
+        };
+        Insert: {
+          actor_profile_id?: string | null;
+          consumed_at?: string | null;
+          created_at?: string;
+          expires_at: string;
+          google_cloud_location?: string;
+          google_cloud_project_id: string;
+          model_id?: string;
+          provider: string;
+          state: string;
+        };
+        Update: {
+          actor_profile_id?: string | null;
+          consumed_at?: string | null;
+          created_at?: string;
+          expires_at?: string;
+          google_cloud_location?: string;
+          google_cloud_project_id?: string;
+          model_id?: string;
+          provider?: string;
+          state?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'integration_oauth_states_actor_profile_id_fkey';
+            columns: ['actor_profile_id'];
+            isOneToOne: false;
+            referencedRelation: 'profiles';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
       people: {
         Row: {
           company_id: string | null;

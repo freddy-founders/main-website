@@ -3,7 +3,16 @@ import { spawn } from 'node:child_process';
 const host = '127.0.0.1';
 const port = Number(process.env.SMOKE_PORT ?? 4174);
 const origin = `http://${host}:${port}`;
-const routes = ['/', '/events', '/people', '/companies', '/login', '/register', '/site-icon.svg'];
+const routes = [
+  '/',
+  '/events',
+  '/people',
+  '/companies',
+  '/login',
+  '/register',
+  '/admin/integrations',
+  '/site-icon.svg',
+];
 
 const server = spawn(
   process.platform === 'win32' ? 'pnpm.cmd' : 'pnpm',

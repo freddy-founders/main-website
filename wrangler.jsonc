@@ -22,5 +22,7 @@
   "vars": {
     "SUPABASE_URL": "https://vnhuiwxavsplhbmwvctx.supabase.co",
     "APP_ORIGIN": "https://freddyfounders.com",
+    "GOOGLE_VERTEX_LOCATION": "global",
+    "GOOGLE_VERTEX_MODEL_ID": "gemini-2.5-flash",
   },
 }

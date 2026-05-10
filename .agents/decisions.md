@@ -467,3 +467,25 @@ local changes -> commit -> push main -> CI gates -> deploy
 Direct `wrangler deploy` from uncommitted local files is prohibited except for an explicit emergency override requested by the user in that moment.
 
 Rationale: production must not drift ahead of git history. `main` should be able to explain and reproduce what is live.
+
+## 2026-05-10 — Google AI validation uses admin-connected app OAuth
+
+Freddy Founders can now connect Google AI from an admin-only `/admin/integrations` surface. The credential model is:
+
+```text
+Freddy-owned Google OAuth web client
+  -> admin grants Google OAuth consent
+  -> Worker stores encrypted refresh token in Supabase
+  -> Worker refreshes access tokens server-side
+  -> Worker calls official Vertex AI Gemini Google Search grounding
+```
+
+The app must not copy OMP's Cloud Code Assist `v1internal` path. Freddy uses official Google OAuth and Vertex AI APIs only. If no Google AI integration is connected, application intake keeps using the deterministic website-evidence gate. If Google AI is connected, company website validation/enrichment is performed server-side through the encrypted admin-granted refresh token.
+
+Required secret material stays outside git:
+
+- `GOOGLE_OAUTH_CLIENT_ID`
+- `GOOGLE_OAUTH_CLIENT_SECRET`
+- `INTEGRATION_TOKEN_ENCRYPTION_KEY`
+
+Rationale: this keeps provider authorization admin-controlled and revocable without putting a raw Gemini API key in the browser or depending on agent-side OMP credentials.

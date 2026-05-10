@@ -6,6 +6,11 @@ const expectedKeys = [
   'VITE_SUPABASE_URL',
   'VITE_SUPABASE_ANON_KEY',
   'SUPABASE_SERVICE_ROLE_KEY',
+  'GOOGLE_OAUTH_CLIENT_ID',
+  'GOOGLE_OAUTH_CLIENT_SECRET',
+  'INTEGRATION_TOKEN_ENCRYPTION_KEY',
+  'GOOGLE_VERTEX_LOCATION',
+  'GOOGLE_VERTEX_MODEL_ID',
   'CLOUDFLARE_API_TOKEN',
   'CLOUDFLARE_ACCOUNT_ID',
   'SUPABASE_ACCESS_TOKEN',
@@ -69,6 +74,20 @@ if (hasValue(env.SUPABASE_REGION) && !/^[a-z]+-[a-z]+-\d+$/.test(env.SUPABASE_RE
 if (process.argv.includes('--cloudflare-deploy')) {
   requireEnv('CLOUDFLARE_API_TOKEN');
   requireEnv('CLOUDFLARE_ACCOUNT_ID');
+}
+
+if (
+  hasValue(env.GOOGLE_VERTEX_LOCATION) &&
+  !/^(global|[a-z]+-[a-z]+\\d+)$/.test(env.GOOGLE_VERTEX_LOCATION)
+) {
+  errors.push('GOOGLE_VERTEX_LOCATION must be global or a region such as us-central1');
+}
+
+if (
+  hasValue(env.GOOGLE_VERTEX_MODEL_ID) &&
+  !/^gemini-[a-z0-9.-]+$/.test(env.GOOGLE_VERTEX_MODEL_ID)
+) {
+  errors.push('GOOGLE_VERTEX_MODEL_ID must be a Gemini model id');
 }
 
 if (process.argv.includes('--supabase-activation')) {
