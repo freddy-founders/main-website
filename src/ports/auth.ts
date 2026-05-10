@@ -4,11 +4,15 @@ export interface AuthSession {
   userId: string;
   email: string;
   role: AccountRole;
+  passwordResetRequired: boolean;
   accessToken?: string;
 }
 
+export type AuthSignInResult = 'authenticated' | 'missing-account' | 'invalid-credentials';
+
 export interface AuthPort {
   getCurrentSession(): Promise<AuthSession | null>;
-  signInWithEmail(email: string, redirectTo?: string): Promise<void>;
+  signInWithPassword(email: string, password: string): Promise<AuthSignInResult>;
+  completePasswordReset(newPassword: string): Promise<void>;
   signOut(): Promise<void>;
 }

@@ -21,6 +21,7 @@ Canonical Mermaid diagrams live in `architecture/`:
 - `architecture/system.mmd`
 - `architecture/ports-and-adapters.mmd`
 - `architecture/verification-pipeline.mmd`
+- `architecture/test-infrastructure.mmd`
 
 Primary code layers:
 
@@ -50,10 +51,11 @@ Production auth is approved-profile-only:
 
 - the public `/register` form creates a pending founder/company application
 - admins approve or archive applications
-- approval creates or reuses the Supabase Auth user, upserts an active profile, and records audit state
-- approved users request passwordless magic links from `/login`
-- login uses `shouldCreateUser: false`, so login never becomes signup
-- deactivated profiles lose private app access and cannot receive login links
+- approval creates or reuses the Supabase Auth user, upserts an active profile, issues a temporary password, marks password reset required, and records audit state
+- approved users log in with email + password from `/login`
+- temporary passwords must be replaced on `/reset-password` before private app access
+- login never creates a new account
+- deactivated profiles lose private app access and cannot use password login
 
 Admin governance uses cumulative roles: `member < organizer < admin`. The `/admin` page is admin-only, only admins can promote users to admin, organizers can promote members to organizers through the backend role boundary, and ownership is a singleton capability stored separately from the role. The owner must remain an admin; first-owner bootstrap is a manual setup SQL operation once the owner profile exists.
 
@@ -68,6 +70,11 @@ mise run dev
 ```bash
 mise run env:check
 mise run tokens:build
+mise run design:check
+mise run action:check
+mise run model:check
+mise run model:test
+mise run action:rendered
 mise run test:unit
 mise run bdd
 mise run check
@@ -76,6 +83,29 @@ mise run smoke:routes
 mise run tf:init
 mise run tf:validate
 ```
+
+Testing infrastructure is Everything as Code:
+
+```text
+src/domain/userActions.ts
+  -> productCapabilities: Capability -> native Cucumber Feature files
+  -> actionCapabilities: action leaves with actor, surface, risk, auth, boundary, verification
+  -> userActionWorkflows: stateful MBT models and required coverage
+features/*.feature
+  -> native Cucumber Features tagged with @capability.<id>
+  -> Scenarios tagged with @action.<action-id> when they exercise user-visible actions
+scripts/check-action-coverage.mjs
+  -> manifest Capability -> Feature -> Scenario/action traceability
+  -> static source action annotation checks
+scripts/check-model-workflow-coverage.mjs
+  -> MBT obligation gate for states, transitions, and forbidden transitions
+scripts/test-model-workflows.mjs
+  -> executable deterministic model tests against application/domain services
+scripts/check-rendered-actions.mjs
+  -> render-phase route audit for exposed buttons, links, and forms
+```
+
+A product capability lists its Cucumber feature files and required action leaves. A Cucumber Feature must carry a matching `@capability.<id>` tag, and scenarios under those features must provide the required `@action.<action-id>` coverage. An action that requires `mbt` must declare a workflow id, appear as an event in that workflow, have workflow coverage for states, transitions, and forbidden transitions, and pass executable model tests against the application/domain service seam. CI fails closed when any required coverage is missing.
 
 Supabase activation for a real project:
 
@@ -97,6 +127,8 @@ pnpm exec wrangler secret put SUPABASE_SERVICE_ROLE_KEY
 
 This secret is used only by the Cloudflare Worker admin API for approval/archive/deactivation and must never be exposed to the browser.
 
+Application intake is also server-enforced: the Worker must successfully fetch/scrape the submitted company website and pass a credentialless deterministic business-evidence gate before creating a pending application. No external LLM API key is required in v0.
+
 Terraform local setup:
 
 ```bash
@@ -110,7 +142,7 @@ Terraform owns optional future provider/account setup. Supabase schema/RLS remai
 The pre-commit hook runs:
 
 ```text
-formatting -> design tokens -> env contract -> design contract -> typecheck -> TDD unit tests -> BDD requirements
+formatting -> design tokens -> env contract -> design contract -> action/capability contract -> model workflow contract -> rendered action audit -> typecheck -> TDD unit tests -> BDD requirements
 ```
 
 ## Trunk CI/CD

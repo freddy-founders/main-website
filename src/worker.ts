@@ -1,6 +1,16 @@
 import { createClient, type SupabaseClient, type User } from '@supabase/supabase-js';
 import type { Database, Json } from './adapters/supabase/database.types';
-
+import {
+  prepareFounderRegistrationRequest,
+  type RegistrationRequestInput,
+} from './domain/accounts';
+import {
+  extractCompanyWebsiteMetadata,
+  normalizeSubmittedWebsiteUrl,
+  validateCompanyWebsiteBusinessEvidence,
+  type CompanyWebsiteBusinessValidationResult,
+  type CompanyWebsiteMetadata,
+} from './domain/websiteMetadata';
 type AssetsBinding = {
   fetch(request: Request): Promise<Response>;
 };
@@ -17,6 +27,7 @@ type AdminProfile = {
   email: string;
   role: string;
   access_status: string;
+  password_reset_required: boolean;
 };
 
 type RegistrationRequestRow = Database['public']['Tables']['registration_requests']['Row'];
@@ -30,9 +41,26 @@ type ApiHandler = (
   actor: AdminProfile,
 ) => Promise<Response>;
 
+type PublicApiHandler = (
+  request: Request,
+  env: WorkerEnv,
+  url: URL,
+  adminClient: SupabaseClient<Database>,
+) => Promise<Response>;
+
+type BusinessValidationResult = CompanyWebsiteBusinessValidationResult;
+
 const jsonHeaders = {
   'content-type': 'application/json; charset=utf-8',
 };
+
+function generateTemporaryPassword(): string {
+  const alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789';
+  const bytes = new Uint8Array(18);
+  crypto.getRandomValues(bytes);
+  const body = Array.from(bytes, (byte) => alphabet[byte % alphabet.length]).join('');
+  return `Ff-${body}!7`;
+}
 
 export default {
   async fetch(request: Request, env: WorkerEnv): Promise<Response> {
@@ -55,6 +83,16 @@ async function handleApiRequest(request: Request, env: WorkerEnv, url: URL): Pro
     auth: { persistSession: false },
   });
 
+  const publicRoute = matchPublicApiRoute(request.method, url.pathname);
+  if (publicRoute) {
+    try {
+      return await publicRoute(request, env, url, adminClient);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Unexpected API error.';
+      return json({ error: message }, 500);
+    }
+  }
+
   const actor = await requireAdmin(request, env, adminClient);
   if (actor instanceof Response) return actor;
 
@@ -69,6 +107,14 @@ async function handleApiRequest(request: Request, env: WorkerEnv, url: URL): Pro
     const message = error instanceof Error ? error.message : 'Unexpected API error.';
     return json({ error: message }, 500);
   }
+}
+
+function matchPublicApiRoute(method: string, pathname: string): PublicApiHandler | null {
+  if (method === 'POST' && pathname === '/api/registration-requests') {
+    return submitRegistrationRequest;
+  }
+
+  return null;
 }
 
 function matchApiRoute(method: string, pathname: string): ApiHandler | null {
@@ -86,8 +132,110 @@ function matchApiRoute(method: string, pathname: string): ApiHandler | null {
     return deactivateProfile;
   }
 
+  if (/^\/api\/admin\/profiles\/[^/]+\/reset-password$/.test(pathname)) {
+    return resetProfilePassword;
+  }
+
   return null;
 }
+
+async function submitRegistrationRequest(
+  request: Request,
+  env: WorkerEnv,
+  _url: URL,
+  adminClient: SupabaseClient<Database>,
+): Promise<Response> {
+  const input = await request.json().catch(() => null);
+  if (!isRegistrationRequestInput(input)) {
+    return json({ error: 'Application payload is invalid.' }, 400);
+  }
+
+  const scrape = await scrapeCompanyWebsiteMetadata(input.companyWebsiteUrl, env);
+  if (!scrape.ok) {
+    return json({ error: 'Could not read company website. Check the URL and try again.' }, 422);
+  }
+
+  const validation = validateBusinessWebsite(input.companyWebsiteUrl, scrape.metadata);
+  if (!validation.ok) {
+    return json({ error: 'Could not validate company website as an active business.' }, 422);
+  }
+
+  let draft;
+  try {
+    draft = prepareFounderRegistrationRequest(input, {
+      companyName: validation.companyName,
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Application payload is invalid.';
+    return json({ error: message }, 422);
+  }
+
+  const { error } = await adminClient.rpc('submit_founder_registration_request', {
+    request_name: draft.name,
+    request_email: draft.email,
+    request_company_name: draft.companyName,
+    request_company_website_url: draft.companyWebsiteUrl,
+    request_company_domain: draft.companyDomain,
+    request_atlantic_canada_tie: draft.townCity,
+    request_role: null,
+    request_founder_context: null,
+    request_topics: [],
+    request_public_directory_consent: false,
+    request_is_company_founder: draft.isCompanyFounder,
+  });
+
+  if (error) {
+    throw error;
+  }
+
+  return json({ ok: true, companyName: draft.companyName });
+}
+
+function isRegistrationRequestInput(value: unknown): value is RegistrationRequestInput {
+  if (!value || typeof value !== 'object') return false;
+
+  const input = value as Record<string, unknown>;
+  return (
+    typeof input.name === 'string' &&
+    typeof input.email === 'string' &&
+    typeof input.companyWebsiteUrl === 'string' &&
+    typeof input.townCity === 'string' &&
+    typeof input.isCompanyFounder === 'boolean'
+  );
+}
+
+async function scrapeCompanyWebsiteMetadata(
+  companyWebsiteUrl: string,
+  env: WorkerEnv,
+): Promise<
+  | { ok: true; metadata: CompanyWebsiteMetadata }
+  | { ok: false; reason: 'invalid-url' | 'fetch-failed' | 'empty-html' | 'missing-company-name' }
+> {
+  const normalizedUrl = normalizeSubmittedWebsiteUrl(companyWebsiteUrl);
+  if (!normalizedUrl) return { ok: false, reason: 'invalid-url' };
+
+  let response: Response;
+  try {
+    response = await fetch(normalizedUrl, {
+      headers: {
+        accept: 'text/html,application/xhtml+xml',
+        'user-agent': `FreddyFoundersBot/1.0 (+${env.APP_ORIGIN ?? 'https://freddyfounders.com'})`,
+      },
+      redirect: 'follow',
+    });
+  } catch {
+    return { ok: false, reason: 'fetch-failed' };
+  }
+
+  if (!response.ok) {
+    return { ok: false, reason: 'fetch-failed' };
+  }
+
+  const html = await response.text();
+  return extractCompanyWebsiteMetadata(html, response.url || normalizedUrl);
+}
+
+const validateBusinessWebsite = validateCompanyWebsiteBusinessEvidence;
 
 async function requireAdmin(
   request: Request,
@@ -108,7 +256,7 @@ async function requireAdmin(
 
   const { data: profile, error: profileError } = await adminClient
     .from('profiles')
-    .select('id, email, role, access_status')
+    .select('id, email, role, access_status, password_reset_required')
     .eq('id', user.id)
     .maybeSingle();
 
@@ -116,7 +264,12 @@ async function requireAdmin(
     throw profileError;
   }
 
-  if (!profile || profile.role !== 'admin' || profile.access_status !== 'active') {
+  if (
+    !profile ||
+    profile.role !== 'admin' ||
+    profile.access_status !== 'active' ||
+    profile.password_reset_required
+  ) {
     return json({ error: 'Admin access required.' }, 403);
   }
 
@@ -132,12 +285,13 @@ async function approveRegistrationRequest(
 ): Promise<Response> {
   const requestId = routeSegment(url.pathname, -2);
   const registrationRequest = await getPendingRegistrationRequest(adminClient, requestId);
-  const user = await ensureApprovedAuthUser(adminClient, registrationRequest);
+  const temporaryPassword = generateTemporaryPassword();
+  const user = await ensureApprovedAuthUser(adminClient, registrationRequest, temporaryPassword);
   const profile = await upsertApprovedProfile(adminClient, user, registrationRequest);
 
   await markRegistrationApproved(adminClient, actor, registrationRequest, profile);
 
-  return json({ ok: true, profileId: profile.id });
+  return json({ ok: true, profileId: profile.id, temporaryPassword });
 }
 
 async function archiveRegistrationRequest(
@@ -219,6 +373,54 @@ async function deactivateProfile(
   return json({ ok: true });
 }
 
+async function resetProfilePassword(
+  _request: Request,
+  _env: WorkerEnv,
+  url: URL,
+  adminClient: SupabaseClient<Database>,
+  actor: AdminProfile,
+): Promise<Response> {
+  const profileId = routeSegment(url.pathname, -2);
+  const { data: target, error: targetError } = await adminClient
+    .from('profiles')
+    .select('*')
+    .eq('id', profileId)
+    .maybeSingle();
+
+  if (targetError) throw targetError;
+  if (!target) return json({ error: 'Profile not found.' }, 404);
+  if (target.access_status !== 'active') {
+    return json({ error: 'Only active profiles can receive a temporary password.' }, 409);
+  }
+
+  const temporaryPassword = generateTemporaryPassword();
+  const { error: authError } = await adminClient.auth.admin.updateUserById(target.id, {
+    password: temporaryPassword,
+    email_confirm: true,
+  });
+
+  if (authError) throw authError;
+
+  const { error: updateError } = await adminClient
+    .from('profiles')
+    .update({
+      password_reset_required: true,
+      temporary_password_issued_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', target.id);
+
+  if (updateError) throw updateError;
+
+  await insertAccessAudit(adminClient, actor, {
+    action: 'password reset issued',
+    targetEmail: target.email,
+    targetProfileId: target.id,
+  });
+
+  return json({ ok: true, temporaryPassword });
+}
+
 async function getPendingRegistrationRequest(
   adminClient: SupabaseClient<Database>,
   requestId: string,
@@ -239,12 +441,26 @@ async function getPendingRegistrationRequest(
 async function ensureApprovedAuthUser(
   adminClient: SupabaseClient<Database>,
   registrationRequest: RegistrationRequestRow,
+  temporaryPassword: string,
 ): Promise<User> {
   const existingUser = await findAuthUserByEmail(adminClient, registrationRequest.email);
-  if (existingUser) return existingUser;
+  if (existingUser) {
+    const { data, error } = await adminClient.auth.admin.updateUserById(existingUser.id, {
+      password: temporaryPassword,
+      email_confirm: true,
+      user_metadata: {
+        name: registrationRequest.name,
+        company_name: registrationRequest.company_name,
+      },
+    });
+    if (error) throw error;
+    if (!data.user) throw new Error('Supabase did not return an updated user.');
+    return data.user;
+  }
 
   const { data, error } = await adminClient.auth.admin.createUser({
     email: registrationRequest.email,
+    password: temporaryPassword,
     email_confirm: true,
     user_metadata: {
       name: registrationRequest.name,
@@ -254,7 +470,18 @@ async function ensureApprovedAuthUser(
 
   if (error) {
     const retryUser = await findAuthUserByEmail(adminClient, registrationRequest.email);
-    if (retryUser) return retryUser;
+    if (retryUser) {
+      const { data: updatedUser, error: updateError } = await adminClient.auth.admin.updateUserById(
+        retryUser.id,
+        {
+          password: temporaryPassword,
+          email_confirm: true,
+        },
+      );
+      if (updateError) throw updateError;
+      if (!updatedUser.user) throw new Error('Supabase did not return an updated user.');
+      return updatedUser.user;
+    }
     throw error;
   }
 
@@ -301,6 +528,8 @@ async function upsertApprovedProfile(
         access_status: 'active',
         public_directory_consent: registrationRequest.public_directory_consent,
         updated_at: new Date().toISOString(),
+        password_reset_required: true,
+        temporary_password_issued_at: new Date().toISOString(),
       },
       { onConflict: 'id' },
     )

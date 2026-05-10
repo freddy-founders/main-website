@@ -51,6 +51,18 @@ jobs:
       - name: Check design contract
         run: pnpm design:check
 
+      - name: Check user action coverage
+        run: pnpm action:check
+
+      - name: Check model workflow coverage
+        run: pnpm model:check
+
+      - name: Run executable model workflow tests
+        run: pnpm model:test
+
+      - name: Audit rendered user actions
+        run: pnpm action:rendered
+
       - name: Typecheck
         run: pnpm check:types
 

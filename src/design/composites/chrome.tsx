@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import { NavLink } from 'react-router-dom';
+import { userActions } from '../../domain/userActions';
 
 export function AppChrome({ children }: { children: ReactNode }) {
   return <div className="ff-app">{children}</div>;
@@ -17,20 +18,30 @@ export function Topbar() {
           <span className="ff-primary-separator" aria-hidden="true">
             /
           </span>
-          <NavLink to="/events">Events</NavLink>
+          <NavLink to="/events" data-user-action={userActions.navigateEvents}>
+            Events
+          </NavLink>
           <span className="ff-primary-separator" aria-hidden="true">
             /
           </span>
-          <NavLink to="/people">People</NavLink>
+          <NavLink to="/people" data-user-action={userActions.navigatePeople}>
+            People
+          </NavLink>
           <span className="ff-primary-separator" aria-hidden="true">
             /
           </span>
-          <NavLink to="/companies">Companies</NavLink>
+          <NavLink to="/companies" data-user-action={userActions.navigateCompanies}>
+            Companies
+          </NavLink>
         </nav>
       </div>
       <nav className="ff-auth-nav" aria-label="Account navigation">
-        <NavLink to="/login">Login</NavLink>
-        <NavLink to="/register">Register</NavLink>
+        <NavLink to="/login" data-user-action={userActions.navigateLogin}>
+          Login
+        </NavLink>
+        <NavLink to="/register" data-user-action={userActions.navigateRegister}>
+          Register
+        </NavLink>
       </nav>
     </header>
   );

@@ -3,14 +3,29 @@ flowchart TD
   Hook[.githooks/pre-commit]
   Format[pnpm fmt:check]
   Tokens[pnpm tokens:build]
+  Env[pnpm env:check]
+  Design[pnpm design:check]
+  Action[pnpm action:check]
+  Model[pnpm model:check]
+  ModelTest[pnpm model:test]
+  Rendered[pnpm action:rendered]
   Types[pnpm check:types]
   Unit[pnpm test:unit]
   BDD[pnpm bdd]
+  Build[pnpm build]
+  Smoke[pnpm smoke:routes]
   CI[GitHub Actions verify]
 
-  Commit --> Hook --> Format --> Tokens --> Types --> Unit --> BDD
+  Commit --> Hook --> Format --> Tokens --> Env --> Design --> Action --> Model --> ModelTest --> Rendered --> Types --> Unit --> BDD
   Format --> CI
   Tokens --> CI
+  Env --> CI
+  Design --> CI
+  Action --> CI
+  Model --> CI
+  ModelTest --> CI
+  Rendered --> CI
   Types --> CI
   Unit --> CI
   BDD --> CI
+  CI --> Build --> Smoke

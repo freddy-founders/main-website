@@ -1,18 +1,23 @@
 import { registrationRequests } from '../../application/fixtures';
 import {
   canAccessAdmin,
+  prepareFounderRegistrationRequest,
   type AccountRole,
   type RegistrationRequest,
-  type RegistrationRequestDraft,
+  type RegistrationRequestInput,
 } from '../../domain/accounts';
 import type { RegistrationRequestRepository } from '../../ports/registrationRequests';
 
 export class InMemoryRegistrationRequestRepository implements RegistrationRequestRepository {
   constructor(private readonly records: RegistrationRequest[] = registrationRequests) {}
 
-  async createRegistrationRequest(input: RegistrationRequestDraft): Promise<void> {
+  async createRegistrationRequest(input: RegistrationRequestInput): Promise<void> {
+    const draft = prepareFounderRegistrationRequest(input, {
+      companyName: 'Memory Scraped Company',
+    });
+
     this.records.push({
-      ...input,
+      ...draft,
       id: `request-${this.records.length + 1}`,
       status: 'pending',
       createdAt: new Date().toISOString(),

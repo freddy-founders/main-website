@@ -1,10 +1,10 @@
 import type {
   AccountRole,
   RegistrationRequest,
-  RegistrationRequestDraft,
+  RegistrationRequestInput,
 } from '../domain/accounts';
 
 export interface RegistrationRequestRepository {
-  createRegistrationRequest(input: RegistrationRequestDraft): Promise<void>;
+  createRegistrationRequest(input: RegistrationRequestInput): Promise<void>;
   listPendingRegistrationRequests(role: AccountRole | null): Promise<RegistrationRequest[]>;
 }

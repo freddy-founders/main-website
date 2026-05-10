@@ -1,3 +1,5 @@
+import { isKnownAtlanticTownCity } from './atlanticTownCities';
+
 export type AccountRole = 'member' | 'organizer' | 'admin';
 export type RegistrationRequestStatus = 'pending' | 'approved' | 'archived' | 'rejected';
 
@@ -32,6 +34,7 @@ export interface ProfileAccount {
   role: AccountRole;
   isOwner: boolean;
   accessStatus: 'active' | 'deactivated';
+  passwordResetRequired: boolean;
   createdAt: string;
 }
 
@@ -47,18 +50,15 @@ export interface TransferOwnershipInput {
 export interface RegistrationRequestInput {
   name: string;
   email: string;
-  companyName: string;
   companyWebsiteUrl: string;
-  role?: string;
-  founderContext?: string;
-  atlanticCanadaTie: string;
-  topics?: string[];
-  publicDirectoryConsent: boolean;
+  townCity: string;
   isCompanyFounder: boolean;
 }
 
 export interface RegistrationRequestDraft extends RegistrationRequestInput {
+  companyName: string;
   companyDomain: string;
+  publicDirectoryConsent: false;
 }
 
 export interface RegistrationRequest extends RegistrationRequestDraft {
@@ -87,6 +87,7 @@ export function companySlugFromDomain(companyDomain: string): string {
 
 export function prepareFounderRegistrationRequest(
   input: RegistrationRequestInput,
+  companyMetadata: { companyName: string },
 ): RegistrationRequestDraft {
   if (!input.isCompanyFounder) {
     throw new Error('Founder affirmation is required.');
@@ -100,27 +101,31 @@ export function prepareFounderRegistrationRequest(
     throw new Error('Email is required.');
   }
 
-  if (input.companyName.trim().length === 0) {
-    throw new Error('Company name is required.');
-  }
-
-  if (input.atlanticCanadaTie.trim().length === 0) {
-    throw new Error('Atlantic Canada tie is required.');
-  }
-
   const companyDomain = normalizeCompanyDomain(input.companyWebsiteUrl);
-  const atlanticCanadaTie = input.atlanticCanadaTie.trim();
+  const townCity = input.townCity.trim();
+
+  if (townCity.length === 0) {
+    throw new Error('Town/City is required.');
+  }
+
+  if (!isKnownAtlanticTownCity(townCity)) {
+    throw new Error('Choose a Town/City from the Atlantic Canada list.');
+  }
+
+  const companyName = companyMetadata.companyName.trim();
+
+  if (companyName.length === 0) {
+    throw new Error('Company website metadata is required.');
+  }
 
   return {
-    ...input,
     name: input.name.trim(),
     email: input.email.trim().toLowerCase(),
-    companyName: input.companyName.trim(),
     companyWebsiteUrl: input.companyWebsiteUrl.trim(),
-    role: input.role?.trim() || undefined,
-    founderContext: atlanticCanadaTie,
-    atlanticCanadaTie,
-    topics: input.topics?.map((topic) => topic.trim()).filter(Boolean) ?? [],
+    townCity,
+    isCompanyFounder: true,
+    companyName,
     companyDomain,
+    publicDirectoryConsent: false,
   };
 }

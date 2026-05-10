@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { Button, Tag, type TagTone } from '../primitives';
+import { Tag, type TagTone } from '../primitives';
 
 export interface BoardTag {
   label: string;
@@ -157,9 +157,13 @@ export function ChipBar({ chips }: { chips: Array<{ label: string; active?: bool
   return (
     <div className="ff-chip-bar">
       {chips.map((chip) => (
-        <Button key={chip.label} tone={chip.active ? 'primary' : 'neutral'} type="button">
+        <span
+          className="ff-button"
+          data-tone={chip.active ? 'primary' : 'neutral'}
+          key={chip.label}
+        >
           {chip.label}
-        </Button>
+        </span>
       ))}
     </div>
   );

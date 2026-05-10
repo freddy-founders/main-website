@@ -306,8 +306,10 @@ export type Database = {
           id: string;
           name: string;
           public_directory_consent: boolean;
+          password_reset_required: boolean;
           role: Database['public']['Enums']['account_role'];
           updated_at: string;
+          temporary_password_issued_at: string | null;
         };
         Insert: {
           access_status?: string;
@@ -318,8 +320,10 @@ export type Database = {
           id: string;
           name: string;
           public_directory_consent?: boolean;
+          password_reset_required?: boolean;
           role?: Database['public']['Enums']['account_role'];
           updated_at?: string;
+          temporary_password_issued_at?: string | null;
         };
         Update: {
           access_status?: string;
@@ -331,7 +335,9 @@ export type Database = {
           name?: string;
           public_directory_consent?: boolean;
           role?: Database['public']['Enums']['account_role'];
+          password_reset_required?: boolean;
           updated_at?: string;
+          temporary_password_issued_at?: string | null;
         };
         Relationships: [];
       };
@@ -492,6 +498,11 @@ export type Database = {
       [_ in never]: never;
     };
     Functions: {
+      can_request_member_login: {
+        Args: { request_email: string };
+        Returns: boolean;
+      };
+      complete_required_password_reset: { Args: never; Returns: undefined };
       admin_bootstrap_owner: { Args: { owner_email: string }; Returns: string };
       current_profile_is_owner: { Args: never; Returns: boolean };
       archive_registration_request: {

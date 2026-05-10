@@ -2,7 +2,6 @@ import type {
   AuthAccountRecord,
   AuthApplicationRecord,
   AuthAuditEntry,
-  AuthMagicLinkRecord,
   AuthNoticeRecord,
   AuthNotificationRecord,
 } from '../../domain/authAccess';
@@ -13,7 +12,7 @@ export class InMemoryAuthAccessRepository implements AuthAccessRepository {
   private applications: AuthApplicationRecord[] = [];
   private accounts = new Map<string, AuthAccountRecord>();
   private sessions = new Set<string>();
-  private magicLinks: AuthMagicLinkRecord[] = [];
+  private temporaryPasswordCount = 0;
   private notices: AuthNoticeRecord[] = [];
   private notifications: AuthNotificationRecord[] = [];
   private auditEntries: AuthAuditEntry[] = [];
@@ -22,7 +21,7 @@ export class InMemoryAuthAccessRepository implements AuthAccessRepository {
     this.applications = [];
     this.accounts = new Map();
     this.sessions = new Set();
-    this.magicLinks = [];
+    this.temporaryPasswordCount = 0;
     this.notices = [];
     this.notifications = [];
     this.auditEntries = [];
@@ -32,8 +31,9 @@ export class InMemoryAuthAccessRepository implements AuthAccessRepository {
     return `application-${this.applications.length + 1}`;
   }
 
-  nextMagicLinkId(): string {
-    return `magic-link-${this.magicLinks.length + 1}`;
+  nextTemporaryPassword(): string {
+    this.temporaryPasswordCount += 1;
+    return `Temp-Password-${this.temporaryPasswordCount}!`;
   }
 
   listApplications(): AuthApplicationRecord[] {
@@ -76,27 +76,6 @@ export class InMemoryAuthAccessRepository implements AuthAccessRepository {
 
   createSession(email: string): void {
     this.sessions.add(normalizeAuthEmail(email));
-  }
-
-  listMagicLinks(email?: string): AuthMagicLinkRecord[] {
-    const normalizedEmail = email ? normalizeAuthEmail(email) : null;
-    return this.magicLinks
-      .filter((link) => !normalizedEmail || link.email === normalizedEmail)
-      .map((link) => ({ ...link }));
-  }
-
-  addMagicLink(record: AuthMagicLinkRecord): void {
-    this.magicLinks.push({ ...record, email: normalizeAuthEmail(record.email) });
-  }
-
-  updateMagicLink(record: AuthMagicLinkRecord): void {
-    const index = this.magicLinks.findIndex((link) => link.id === record.id);
-
-    if (index === -1) {
-      throw new Error(`Magic link not found: ${record.id}`);
-    }
-
-    this.magicLinks[index] = { ...record, email: normalizeAuthEmail(record.email) };
   }
 
   listNotices(email?: string): AuthNoticeRecord[] {

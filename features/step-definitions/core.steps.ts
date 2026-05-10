@@ -71,13 +71,8 @@ When(
     await createRegistrationRequest({
       name: 'New Founder',
       email: 'new-founder@example.com',
-      companyName: 'New Co',
       companyWebsiteUrl,
-      atlanticCanadaTie: 'Building in Atlantic Canada.',
-      role: 'Founder',
-      founderContext: 'Building a company in Fredericton.',
-      topics: ['AI'],
-      publicDirectoryConsent: false,
+      townCity: 'Fredericton, NB',
       isCompanyFounder: true,
     });
   },
@@ -90,13 +85,8 @@ When(
       await createRegistrationRequest({
         name: 'Operator',
         email: 'operator@example.com',
-        companyName: 'Operator Co',
         companyWebsiteUrl,
-        role: 'Operator',
-        atlanticCanadaTie: 'Building in Atlantic Canada.',
-        founderContext: 'I work with founders.',
-        topics: ['Operations'],
-        publicDirectoryConsent: false,
+        townCity: 'Fredericton, NB',
         isCompanyFounder: false,
       });
     } catch (error) {

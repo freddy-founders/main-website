@@ -766,7 +766,6 @@
   font-size: var(--size-text-xs);
   letter-spacing: 0.035em;
   padding: var(--space-sm);
-  text-transform: uppercase;
   width: 100%;
 }
 

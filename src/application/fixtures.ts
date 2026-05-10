@@ -113,6 +113,7 @@ export const profileAccounts: ProfileAccount[] = [
     role: 'admin',
     isOwner: true,
     accessStatus: 'active',
+    passwordResetRequired: false,
     createdAt: '2026-05-08T00:00:00.000Z',
   },
   {
@@ -122,6 +123,7 @@ export const profileAccounts: ProfileAccount[] = [
     role: 'member',
     isOwner: false,
     accessStatus: 'active',
+    passwordResetRequired: false,
     createdAt: '2026-05-08T00:00:00.000Z',
   },
 ];
@@ -134,10 +136,7 @@ export const registrationRequests: RegistrationRequest[] = [
     companyName: 'Example Co',
     companyWebsiteUrl: 'https://example.com',
     companyDomain: 'example.com',
-    role: 'Founder',
-    founderContext: 'Exploring Freddy Founders membership.',
-    atlanticCanadaTie: 'Building from Fredericton.',
-    topics: ['Fundraising'],
+    townCity: 'Fredericton, NB',
     publicDirectoryConsent: false,
     isCompanyFounder: true,
     status: 'pending',

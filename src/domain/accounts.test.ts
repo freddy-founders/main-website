@@ -33,40 +33,38 @@ describe('founder registration domain rules', () => {
 
   it('requires the user to affirm they are a founder of the company', () => {
     expect(() =>
-      prepareFounderRegistrationRequest({
-        name: 'Operator',
-        email: 'operator@example.com',
-        companyName: 'Operator Co',
-        companyWebsiteUrl: 'https://operator.example',
-        atlanticCanadaTie: 'Building in Atlantic Canada.',
-        topics: [],
-        publicDirectoryConsent: false,
-        isCompanyFounder: false,
-      }),
+      prepareFounderRegistrationRequest(
+        {
+          name: 'Operator',
+          email: 'operator@example.com',
+          companyWebsiteUrl: 'https://operator.example',
+          townCity: 'Fredericton, NB',
+          isCompanyFounder: false,
+        },
+        { companyName: 'Operator Co' },
+      ),
     ).toThrow('Founder affirmation is required.');
   });
 
   it('prepares a company-bound registration draft for adapters', () => {
     expect(
-      prepareFounderRegistrationRequest({
-        name: ' Founder ',
-        email: 'FOUNDER@EXAMPLE.COM',
-        companyName: ' Example Co ',
-        companyWebsiteUrl: 'www.example.com',
-        role: ' Founder ',
-        atlanticCanadaTie: ' Building locally. ',
-        topics: [' AI ', ''],
-        publicDirectoryConsent: true,
-        isCompanyFounder: true,
-      }),
+      prepareFounderRegistrationRequest(
+        {
+          name: ' Founder ',
+          email: 'FOUNDER@EXAMPLE.COM',
+          companyWebsiteUrl: 'www.example.com',
+          townCity: 'Fredericton, NB',
+          isCompanyFounder: true,
+        },
+        { companyName: 'Scraped Example Co' },
+      ),
     ).toMatchObject({
       name: 'Founder',
       email: 'founder@example.com',
-      companyName: 'Example Co',
+      companyName: 'Scraped Example Co',
       companyDomain: 'example.com',
-      role: 'Founder',
-      founderContext: 'Building locally.',
-      atlanticCanadaTie: 'Building locally.',
+      townCity: 'Fredericton, NB',
+      publicDirectoryConsent: false,
       isCompanyFounder: true,
     });
   });

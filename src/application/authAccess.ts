@@ -1,11 +1,11 @@
 import {
   accountCanOpenRoute,
-  canRequestMagicLoginLink,
-  magicLinkCanAuthenticate,
+  canAttemptPasswordLogin,
+  canCompletePasswordReset,
   missingFounderApplicationField,
   normalizeAuthEmail,
+  passwordLoginCanAuthenticate,
   parseAuthRole,
-  productionAuthCallbackUrl,
   productionLoginUrl,
   roleCanPerformAction,
   routeBoundaryForAnonymous,
@@ -15,23 +15,21 @@ import {
   type AuthAccountRecord,
   type AuthApplicationRecord,
   type AuthAuditEntry,
-  type AuthMagicLinkRecord,
   type FounderAccessApplicationInput,
-  type LoginRequestResult,
-  type MagicLoginResult,
+  type PasswordLoginRequestResult,
+  type TemporaryPasswordIssueResult,
 } from '../domain/authAccess';
 import type { AccountRole } from '../domain/accounts';
 import type { AuthAccessRepository } from '../ports/authAccess';
 
 const defaultActor = 'admin@example.com';
+const defaultMemberPassword = 'member-password';
 
 function nowIso(): string {
   return new Date().toISOString();
 }
 
-function latestByCreatedAt<T extends { createdAt?: string; issuedAt?: string }>(
-  records: T[],
-): T | null {
+function latestByCreatedAt<T extends { createdAt?: string }>(records: T[]): T | null {
   return records.at(-1) ?? null;
 }
 
@@ -39,11 +37,9 @@ function completeFounderApplication(email: string): FounderAccessApplicationInpu
   return {
     name: 'Founder Applicant',
     email,
-    companyName: 'Applicant Co',
     companyWebsiteUrl: 'https://applicant.example',
-    atlanticCanadaTie: 'Building from Atlantic Canada.',
+    townCity: 'Fredericton, NB',
     founderAffirmed: true,
-    publicDirectoryConsent: true,
   };
 }
 
@@ -88,7 +84,12 @@ export function createAuthAccessService(repository: AuthAccessRepository) {
     email: string,
     role: AccountRole,
     status: AuthAccountRecord['status'] = 'active',
-    options: Partial<Pick<AuthAccountRecord, 'isOwner' | 'fromApplication'>> = {},
+    options: Partial<
+      Pick<
+        AuthAccountRecord,
+        'isOwner' | 'fromApplication' | 'password' | 'temporaryPassword' | 'passwordResetRequired'
+      >
+    > = {},
   ): AuthAccountRecord {
     const existing = repository.getAccount(email);
     const account = {
@@ -97,48 +98,44 @@ export function createAuthAccessService(repository: AuthAccessRepository) {
       status,
       isOwner: options.isOwner ?? existing?.isOwner ?? false,
       fromApplication: options.fromApplication ?? existing?.fromApplication ?? false,
+      password: options.password ?? existing?.password ?? defaultMemberPassword,
+      temporaryPassword: options.temporaryPassword ?? existing?.temporaryPassword ?? null,
+      passwordResetRequired:
+        options.passwordResetRequired ?? existing?.passwordResetRequired ?? false,
       createdAt: existing?.createdAt ?? nowIso(),
     } satisfies AuthAccountRecord;
     repository.upsertAccount(account);
     return account;
   }
 
-  function issueMagicLink(email: string): AuthMagicLinkRecord {
-    for (const link of repository.listMagicLinks(email).filter((record) => !record.used)) {
-      repository.updateMagicLink({ ...link, superseded: true });
+  function issueTemporaryPassword(email: string, kind: 'approval' | 'password-reset') {
+    const account = repository.getAccount(email);
+    if (!account || account.status !== 'active') {
+      throw new Error(`Active account not found for ${email}`);
     }
 
-    const link = {
-      id: repository.nextMagicLinkId(),
+    const temporaryPassword = repository.nextTemporaryPassword();
+    repository.upsertAccount({
+      ...account,
+      temporaryPassword,
+      passwordResetRequired: true,
+    });
+    repository.addNotice({
       email: normalizeAuthEmail(email),
-      redirectTo: productionAuthCallbackUrl,
-      expired: false,
-      used: false,
-      superseded: false,
-      issuedAt: nowIso(),
-    } satisfies AuthMagicLinkRecord;
-    repository.addMagicLink(link);
-    return link;
-  }
+      kind,
+      loginUrl: productionLoginUrl,
+      includesTemporaryPassword: true,
+      sentAt: nowIso(),
+    });
+    addAuditEntry(
+      kind === 'approval' ? 'temporary password issued' : 'password reset issued',
+      email,
+    );
 
-  function latestMagicLinkFor(email: string): AuthMagicLinkRecord | null {
-    return repository.listMagicLinks(email).at(-1) ?? null;
-  }
-
-  function useMagicLink(link: AuthMagicLinkRecord | null): MagicLoginResult {
-    if (!link) {
-      return 'rejected';
-    }
-
-    const account = repository.getAccount(link.email);
-
-    if (!magicLinkCanAuthenticate(link, account)) {
-      return 'rejected';
-    }
-
-    repository.updateMagicLink({ ...link, used: true });
-    repository.createSession(link.email);
-    return 'authenticated';
+    return {
+      email: normalizeAuthEmail(email),
+      temporaryPassword,
+    } satisfies TemporaryPasswordIssueResult;
   }
 
   return {
@@ -183,9 +180,9 @@ export function createAuthAccessService(repository: AuthAccessRepository) {
         id: repository.nextApplicationId(),
         email: normalizedEmail,
         name: input.name.trim(),
-        companyName: input.companyName.trim(),
         companyWebsiteUrl: input.companyWebsiteUrl.trim(),
-        atlanticCanadaTie: input.atlanticCanadaTie.trim(),
+        townCity: input.townCity.trim(),
+        publicDirectoryConsent: false,
         status: 'pending',
         createdAt: nowIso(),
       });
@@ -195,6 +192,30 @@ export function createAuthAccessService(repository: AuthAccessRepository) {
         accepted: true,
         blockedReason: null,
       };
+    },
+
+    submitFounderApplicationAfterWebsiteValidation(
+      input: FounderAccessApplicationInput,
+      scrapeSucceeded: boolean,
+      businessValidated: boolean,
+    ): ApplicationAttemptResult {
+      if (!scrapeSucceeded) {
+        return {
+          email: normalizeAuthEmail(input.email),
+          accepted: false,
+          blockedReason: 'website-scrape-failed',
+        };
+      }
+
+      if (!businessValidated) {
+        return {
+          email: normalizeAuthEmail(input.email),
+          accepted: false,
+          blockedReason: 'business-validation-failed',
+        };
+      }
+
+      return this.submitFounderApplication(input);
     },
 
     createPendingApplication(email: string) {
@@ -207,6 +228,7 @@ export function createAuthAccessService(repository: AuthAccessRepository) {
         ...input,
         id: repository.nextApplicationId(),
         email: normalizeAuthEmail(email),
+        publicDirectoryConsent: false,
         status: 'archived',
         createdAt: nowIso(),
       });
@@ -217,11 +239,30 @@ export function createAuthAccessService(repository: AuthAccessRepository) {
       role: AccountRole,
       status: AuthAccountRecord['status'] = 'active',
     ) {
-      return upsertAccount(email, role, status, { fromApplication: true });
+      return upsertAccount(email, role, status, {
+        fromApplication: true,
+        password: defaultMemberPassword,
+        passwordResetRequired: false,
+        temporaryPassword: null,
+      });
+    },
+
+    createAccountRequiringPasswordReset(email: string, role: AccountRole = 'member') {
+      const account = upsertAccount(email, role, 'active', {
+        fromApplication: true,
+        password: defaultMemberPassword,
+        passwordResetRequired: false,
+        temporaryPassword: null,
+      });
+      const result = issueTemporaryPassword(account.email, 'password-reset');
+      return { account: repository.getAccount(email), ...result };
     },
 
     createOwnerAdmin(email: string) {
-      return upsertAccount(email, 'admin', 'active', { isOwner: true });
+      return upsertAccount(email, 'admin', 'active', {
+        isOwner: true,
+        password: defaultMemberPassword,
+      });
     },
 
     applicationFor(email: string) {
@@ -242,22 +283,22 @@ export function createAuthAccessService(repository: AuthAccessRepository) {
       return repository.hasSession(email);
     },
 
-    canRequestMagicLink(email: string): boolean {
-      return canRequestMagicLoginLink(repository.getAccount(email));
+    canAttemptPasswordLogin(email: string): boolean {
+      return canAttemptPasswordLogin(repository.getAccount(email));
     },
 
     approveApplication(email: string) {
       const application = requirePendingApplication(email);
       repository.updateApplication({ ...application, status: 'approved' });
-      upsertAccount(email, 'member', 'active', { fromApplication: true });
-      repository.addNotice({
-        email: normalizeAuthEmail(email),
-        kind: 'approval',
-        loginUrl: productionLoginUrl,
-        includesMagicSignInLink: false,
-        sentAt: nowIso(),
+      upsertAccount(email, 'member', 'active', {
+        fromApplication: true,
+        password: defaultMemberPassword,
+        passwordResetRequired: false,
+        temporaryPassword: null,
       });
+      const temporaryPassword = issueTemporaryPassword(email, 'approval');
       addAuditEntry('approve', email);
+      return temporaryPassword;
     },
 
     archiveApplication(email: string) {
@@ -274,59 +315,66 @@ export function createAuthAccessService(repository: AuthAccessRepository) {
       return repository.listNotifications(email);
     },
 
-    requestMagicLoginLink(email: string): LoginRequestResult {
+    requestPasswordLogin(email: string, password: string): PasswordLoginRequestResult {
       const normalizedEmail = normalizeAuthEmail(email);
       const accountExistedBefore = Boolean(repository.getAccount(normalizedEmail));
-      const sent = this.canRequestMagicLink(normalizedEmail);
+      const account = repository.getAccount(normalizedEmail);
 
-      if (sent) {
-        issueMagicLink(normalizedEmail);
-        addAuditEntry('login-link send', normalizedEmail);
+      if (!canAttemptPasswordLogin(account)) {
+        return {
+          email: normalizedEmail,
+          authenticated: false,
+          accountCreated: !accountExistedBefore && Boolean(repository.getAccount(normalizedEmail)),
+          status: 'missing-account',
+        };
       }
+
+      const loginResult = passwordLoginCanAuthenticate(account, password);
+      if (loginResult === 'rejected') {
+        return {
+          email: normalizedEmail,
+          authenticated: false,
+          accountCreated: false,
+          status: 'invalid-credentials',
+        };
+      }
+
+      repository.createSession(normalizedEmail);
+      addAuditEntry('password login', normalizedEmail);
 
       return {
         email: normalizedEmail,
-        sent,
-        accountCreated: !accountExistedBefore && Boolean(repository.getAccount(normalizedEmail)),
-        genericResponse: true,
+        authenticated: true,
+        accountCreated: false,
+        status: loginResult === 'reset-required' ? 'reset-required' : 'authenticated',
       };
     },
 
-    issueFreshMagicLoginLink(email: string) {
-      if (!repository.getAccount(email)) {
-        upsertAccount(email, 'member', 'active', { fromApplication: true });
-      }
-
-      return issueMagicLink(email);
+    resetMemberPassword(email: string) {
+      return issueTemporaryPassword(email, 'password-reset');
     },
 
-    markLatestMagicLink(email: string, state: 'expired' | 'used') {
-      const link = latestMagicLinkFor(email);
+    completePasswordReset(email: string, newPassword: string): boolean {
+      const normalizedEmail = normalizeAuthEmail(email);
+      const account = repository.getAccount(normalizedEmail);
 
-      if (!link) {
-        throw new Error(`Magic link not found for ${email}`);
+      if (
+        !account ||
+        !repository.hasSession(normalizedEmail) ||
+        !canCompletePasswordReset(account)
+      ) {
+        return false;
       }
 
-      repository.updateMagicLink({
-        ...link,
-        expired: state === 'expired' ? true : link.expired,
-        used: state === 'used' ? true : link.used,
+      repository.upsertAccount({
+        ...account,
+        password: newPassword,
+        temporaryPassword: null,
+        passwordResetRequired: false,
       });
+      addAuditEntry('password reset complete', normalizedEmail, normalizedEmail);
+      return true;
     },
-
-    issueSecondMagicLoginLink(email: string) {
-      return issueMagicLink(email);
-    },
-
-    useLatestMagicLoginLink(email: string): MagicLoginResult {
-      return useMagicLink(latestMagicLinkFor(email));
-    },
-
-    useFirstMagicLoginLink(email: string): MagicLoginResult {
-      return useMagicLink(repository.listMagicLinks(email).at(0) ?? null);
-    },
-
-    latestMagicLinkFor,
 
     openRoute(email: string, route: string): AccessDecision {
       return accountCanOpenRoute(repository.getAccount(email), route);
@@ -377,6 +425,10 @@ export function createAuthAccessService(repository: AuthAccessRepository) {
         throw new Error(`Account not found for ${email}`);
       }
 
+      if (account.isOwner) {
+        throw new Error('The singleton owner cannot be deactivated.');
+      }
+
       repository.upsertAccount({ ...account, status: 'deactivated' });
       addAuditEntry('deactivate', email);
     },
@@ -421,9 +473,15 @@ export function createAuthAccessService(repository: AuthAccessRepository) {
         return;
       }
 
-      if (action === 'login-link send') {
-        upsertAccount(email, 'member', 'active');
-        this.requestMagicLoginLink(email);
+      if (action === 'password login') {
+        upsertAccount(email, 'member', 'active', { password: defaultMemberPassword });
+        this.requestPasswordLogin(email, defaultMemberPassword);
+        return;
+      }
+
+      if (action === 'password reset issued') {
+        upsertAccount(email, 'member', 'active', { password: defaultMemberPassword });
+        this.resetMemberPassword(email);
         return;
       }
 

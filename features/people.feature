@@ -1,6 +1,8 @@
+@capability.member-directory
 Feature: Private people directory
   People is a member-visible Bookface-like directory, not a public social feed.
 
+  @action.navigate-people
   Scenario: Member sees only consented people
     Given the app is private
     And an approved member is logged in

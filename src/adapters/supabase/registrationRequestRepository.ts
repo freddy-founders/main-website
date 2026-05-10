@@ -3,7 +3,7 @@ import {
   canAccessAdmin,
   type AccountRole,
   type RegistrationRequest,
-  type RegistrationRequestDraft,
+  type RegistrationRequestInput,
 } from '../../domain/accounts';
 import type { RegistrationRequestRepository } from '../../ports/registrationRequests';
 import type { Database } from './database.types';
@@ -11,25 +11,19 @@ import type { Database } from './database.types';
 export class SupabaseRegistrationRequestRepository implements RegistrationRequestRepository {
   constructor(private readonly client: SupabaseClient<Database>) {}
 
-  async createRegistrationRequest(input: RegistrationRequestDraft): Promise<void> {
-    const { error } = await this.client.rpc('submit_founder_registration_request', {
-      request_name: input.name,
-      request_email: input.email,
-      request_company_name: input.companyName,
-      request_company_website_url: input.companyWebsiteUrl,
-      request_company_domain: input.companyDomain,
-      request_atlantic_canada_tie: input.atlanticCanadaTie,
-      request_role: input.role ?? null,
-      request_founder_context: input.founderContext ?? null,
-      request_topics: input.topics ?? [],
-      request_public_directory_consent: input.publicDirectoryConsent,
-      request_is_company_founder: input.isCompanyFounder,
+  async createRegistrationRequest(input: RegistrationRequestInput): Promise<void> {
+    const response = await fetch('/api/registration-requests', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(input),
     });
 
-    if (error) {
-      throw error;
+    if (!response.ok) {
+      const payload = (await response.json().catch(() => null)) as { error?: string } | null;
+      throw new Error(payload?.error ?? 'Could not submit application.');
     }
   }
+
   async listPendingRegistrationRequests(role: AccountRole | null): Promise<RegistrationRequest[]> {
     if (!canAccessAdmin(role)) {
       return [];
@@ -50,12 +44,9 @@ export class SupabaseRegistrationRequestRepository implements RegistrationReques
       email: row.email,
       companyName: row.company_name ?? row.company_domain,
       companyWebsiteUrl: row.company_website_url,
+      townCity: row.atlantic_canada_tie,
       companyDomain: row.company_domain,
-      role: row.role ?? undefined,
-      founderContext: row.founder_context ?? undefined,
-      atlanticCanadaTie: row.atlantic_canada_tie,
-      topics: row.topics ?? [],
-      publicDirectoryConsent: row.public_directory_consent,
+      publicDirectoryConsent: false,
       isCompanyFounder: row.is_company_founder,
       status: row.status,
       createdAt: row.created_at,

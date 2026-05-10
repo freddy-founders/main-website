@@ -1,14 +1,15 @@
 import { type DependencyList, type FormEvent, type ReactNode, useEffect, useState } from 'react';
-import { Navigate, Route, Routes } from 'react-router-dom';
+import { Navigate, Route, Routes, useNavigate } from 'react-router-dom';
 import {
   approveRegistrationRequest,
   archiveRegistrationRequest,
   deactivateProfile,
   listPendingRegistrationRequests,
   listProfiles,
+  resetProfilePassword,
   setProfileRole,
 } from './application/admin';
-import { getCurrentSession, sendMagicLink } from './application/auth';
+import { completePasswordReset, getCurrentSession, signInWithPassword } from './application/auth';
 import { listPublicCompanies } from './application/companies';
 import { listPublicEvents } from './application/events';
 import { listPublicPeople } from './application/people';
@@ -35,7 +36,6 @@ import {
   Row,
   RowList,
   TagList,
-  TextArea,
   TextInput,
   Topbar,
 } from './design';
@@ -43,6 +43,13 @@ import type { ProfileAccount, RegistrationRequest } from './domain/accounts';
 import type { CompanySummary } from './domain/companies';
 import type { EventRegistrationAction, EventSummary } from './domain/events';
 import type { PersonSummary } from './domain/people';
+import { atlanticTownCities } from './domain/atlanticTownCities';
+import {
+  loginPageContract,
+  passwordResetPageContract,
+  registerPageContract,
+} from './domain/authPages';
+import { userActions } from './domain/userActions';
 
 type PublicEventView = EventSummary & {
   registrationAction: EventRegistrationAction;
@@ -129,6 +136,10 @@ function PrivateRoute({ children }: { children: ReactNode }) {
 
   if (!session) {
     return <Navigate to="/login" replace />;
+  }
+
+  if (session.passwordResetRequired) {
+    return <Navigate to="/reset-password" replace />;
   }
 
   return children;
@@ -219,6 +230,7 @@ function Shell() {
       />
       <Route path="/login" element={<LoginPage />} />
       <Route path="/register" element={<RegisterPage />} />
+      <Route path="/reset-password" element={<PasswordResetPage />} />
       <Route path="/auth/callback" element={<LoginCallbackPage />} />
       <Route
         path="/admin"
@@ -317,30 +329,16 @@ function EventScheduleRow({
       tags={compact ? [] : eventTags(event)}
       actions={
         event.registrationAction.kind === 'external' ? (
-          <>
-            <ButtonLink href={event.registrationAction.url}>
-              {event.registrationAction.label}
-            </ButtonLink>
-            <Button type="button" tone="neutral">
-              Details
-            </Button>
-          </>
+          <ButtonLink
+            href={event.registrationAction.url}
+            data-user-action={userActions.registerExternalEvent}
+          >
+            {event.registrationAction.label}
+          </ButtonLink>
         ) : event.registrationAction.kind === 'future-internal' ? (
-          <>
-            <Button type="button">{event.registrationAction.label}</Button>
-            <Button type="button" tone="neutral">
-              Details
-            </Button>
-          </>
+          <Notice>Internal RSVP is not available yet.</Notice>
         ) : (
-          <>
-            <Button type="button" tone="neutral">
-              {event.registrationAction.label}
-            </Button>
-            <Button type="button" tone="neutral">
-              Details
-            </Button>
-          </>
+          <Notice>{event.registrationAction.label}</Notice>
         )
       }
     >
@@ -411,37 +409,57 @@ function CompaniesPage() {
   );
 }
 
+function destinationForSession(session: Awaited<ReturnType<typeof getCurrentSession>>): string {
+  if (!session) return '/login';
+  if (session.passwordResetRequired) return '/reset-password';
+  return session.role === 'admin' ? '/admin' : '/events';
+}
+
 function LoginPage() {
   const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [status, setStatus] = useState<string | null>(null);
+  const navigate = useNavigate();
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    setStatus('If this email has approved access, a login link has been sent.');
+    setStatus('Checking credentials...');
 
     try {
-      await sendMagicLink(email, `${window.location.origin}/auth/callback`);
+      const result = await signInWithPassword(email, password);
+
+      if (result === 'authenticated') {
+        const session = await getCurrentSession();
+        navigate(destinationForSession(session), { replace: true });
+        return;
+      }
+
+      setStatus(loginPageContract.invalidCredentialsNotice);
     } catch {
-      setStatus('If this email has approved access, a login link has been sent.');
+      setStatus(loginPageContract.invalidCredentialsNotice);
     }
   }
 
   return (
     <AuthEntryShell
-      eyebrow="Private community"
-      title="Member login"
-      subtitle="You will receive a login link to your email."
+      eyebrow={loginPageContract.eyebrow}
+      title={loginPageContract.title}
+      subtitle={loginPageContract.subtitle}
       secondary={
         <>
-          <p>Need access?</p>
-          <ButtonLink href="/register" tone="neutral">
-            Apply for access
+          <p>{loginPageContract.secondaryPrompt}</p>
+          <ButtonLink
+            href="/register"
+            tone="neutral"
+            data-user-action={userActions.navigateRegister}
+          >
+            {loginPageContract.secondaryLinkLabel}
           </ButtonLink>
         </>
       }
-      footer="Access is approval-based. Login never creates a new account."
+      footer={loginPageContract.footer}
     >
-      <form onSubmit={handleSubmit}>
+      <form onSubmit={handleSubmit} data-user-action={userActions.submitLogin}>
         <FieldGrid>
           <Field label="Email address">
             <TextInput
@@ -454,7 +472,108 @@ function LoginPage() {
               onChange={(event) => setEmail(event.currentTarget.value)}
             />
           </Field>
-          <Button type="submit">Send login link</Button>
+          <Field label={loginPageContract.passwordLabel}>
+            <TextInput
+              type="password"
+              name="password"
+              autoComplete="current-password"
+              required
+              value={password}
+              onChange={(event) => setPassword(event.currentTarget.value)}
+            />
+          </Field>
+          <Button type="submit" data-user-action={userActions.submitLogin}>
+            {loginPageContract.primaryActionLabel}
+          </Button>
+          {status ? <Notice>{status}</Notice> : null}
+        </FieldGrid>
+      </form>
+    </AuthEntryShell>
+  );
+}
+
+function PasswordResetPage() {
+  const { loading, session } = useCurrentSession();
+  const [password, setPassword] = useState('');
+  const [confirmation, setConfirmation] = useState('');
+  const [status, setStatus] = useState<string | null>(null);
+  const navigate = useNavigate();
+
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    if (password.length < 8) {
+      setStatus(passwordResetPageContract.minimumLengthNotice);
+      return;
+    }
+
+    if (password !== confirmation) {
+      setStatus(passwordResetPageContract.mismatchNotice);
+      return;
+    }
+
+    try {
+      await completePasswordReset(password);
+      setStatus(passwordResetPageContract.successNotice);
+      const nextSession = await getCurrentSession();
+      navigate(destinationForSession(nextSession), { replace: true });
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : 'Could not update password.');
+    }
+  }
+
+  if (loading) {
+    return (
+      <AuthEntryShell
+        eyebrow={passwordResetPageContract.eyebrow}
+        title={passwordResetPageContract.title}
+        subtitle="Checking account state..."
+      >
+        <Notice>Checking Freddy Founders access...</Notice>
+      </AuthEntryShell>
+    );
+  }
+
+  if (!session) {
+    return <Navigate to="/login" replace />;
+  }
+
+  if (!session.passwordResetRequired) {
+    return <Navigate to={destinationForSession(session)} replace />;
+  }
+
+  return (
+    <AuthEntryShell
+      eyebrow={passwordResetPageContract.eyebrow}
+      title={passwordResetPageContract.title}
+      subtitle={passwordResetPageContract.subtitle}
+      footer="Choose a permanent password before entering the private app."
+    >
+      <form onSubmit={handleSubmit} data-user-action={userActions.completePasswordReset}>
+        <FieldGrid>
+          <Field label={passwordResetPageContract.passwordLabel}>
+            <TextInput
+              type="password"
+              name="new-password"
+              autoComplete="new-password"
+              required
+              value={password}
+              onChange={(event) => setPassword(event.currentTarget.value)}
+            />
+          </Field>
+          <Field label={passwordResetPageContract.confirmPasswordLabel}>
+            <TextInput
+              type="password"
+              name="confirm-new-password"
+              autoComplete="new-password"
+              required
+              value={confirmation}
+              onChange={(event) => setConfirmation(event.currentTarget.value)}
+            />
+          </Field>
+          <Button type="submit" data-user-action={userActions.completePasswordReset}>
+            {passwordResetPageContract.primaryActionLabel}
+          </Button>
           {status ? <Notice>{status}</Notice> : null}
         </FieldGrid>
       </form>
@@ -463,21 +582,7 @@ function LoginPage() {
 }
 
 function LoginCallbackPage() {
-  const { loading, session } = useCurrentSession();
-
-  if (loading) {
-    return (
-      <AuthEntryShell
-        eyebrow="Private community"
-        title="Completing login"
-        subtitle="Checking Freddy Founders access..."
-      >
-        <Notice>Hold tight while we verify this login link.</Notice>
-      </AuthEntryShell>
-    );
-  }
-
-  return <Navigate to={session?.role === 'admin' ? '/admin' : '/events'} replace />;
+  return <Navigate to="/login" replace />;
 }
 
 function RegisterPage() {
@@ -493,17 +598,12 @@ function RegisterPage() {
       await createRegistrationRequest({
         name: String(form.get('name') ?? ''),
         email: String(form.get('email') ?? ''),
-        companyName: String(form.get('company-name') ?? ''),
         companyWebsiteUrl: String(form.get('company-website-url') ?? ''),
-        atlanticCanadaTie: String(form.get('atlantic-canada-tie') ?? ''),
-        role: '',
-        founderContext: '',
-        topics: [],
-        publicDirectoryConsent: form.get('public-directory-consent') === 'on',
+        townCity: String(form.get('town-city') ?? ''),
         isCompanyFounder: form.get('is-company-founder') === 'on',
       });
       formElement.reset();
-      setStatus('Application received. Admins will review it.');
+      setStatus(registerPageContract.successNotice);
     } catch (error) {
       setStatus(error instanceof Error ? error.message : 'Could not submit application.');
     }
@@ -511,20 +611,20 @@ function RegisterPage() {
 
   return (
     <AuthEntryShell
-      eyebrow="Request access"
-      title="Apply for access"
-      subtitle="Freddy Founders is a private community for Atlantic Canadian founders."
+      eyebrow={registerPageContract.eyebrow}
+      title={registerPageContract.title}
+      subtitle={registerPageContract.subtitle}
       secondary={
         <>
-          <p>Already approved?</p>
-          <ButtonLink href="/login" tone="neutral">
-            Return to login
+          <p>{registerPageContract.secondaryPrompt}</p>
+          <ButtonLink href="/login" tone="neutral" data-user-action={userActions.navigateLogin}>
+            {registerPageContract.secondaryLinkLabel}
           </ButtonLink>
         </>
       }
-      footer="Submitting an application does not create login access."
+      footer={registerPageContract.footer}
     >
-      <form onSubmit={handleSubmit}>
+      <form onSubmit={handleSubmit} data-user-action={userActions.submitApplication}>
         <FieldGrid>
           <Field label="Name">
             <TextInput name="name" autoComplete="name" placeholder="Full name" required />
@@ -538,9 +638,6 @@ function RegisterPage() {
               required
             />
           </Field>
-          <Field label="Company">
-            <TextInput name="company-name" placeholder="Company name" required />
-          </Field>
           <Field label="Company website">
             <TextInput
               type="url"
@@ -549,26 +646,25 @@ function RegisterPage() {
               required
             />
           </Field>
-          <Field label="Atlantic Canada tie">
-            <TextArea
-              name="atlantic-canada-tie"
-              rows={3}
-              placeholder="Where are you based, or what is your Atlantic Canada community tie?"
+          <Field label={registerPageContract.townCityLabel}>
+            <TextInput
+              name="town-city"
+              list="atlantic-town-cities"
+              placeholder="Search Town/City"
               required
             />
+            <datalist id="atlantic-town-cities">
+              {atlanticTownCities.map((townCity) => (
+                <option key={townCity} value={townCity} />
+              ))}
+            </datalist>
           </Field>
-          <Field label="Founder affirmation">
+          <Field label={registerPageContract.founderAffirmationLabel}>
             <TextInput type="checkbox" name="is-company-founder" required />
           </Field>
-          <details>
-            <summary>Optional visibility</summary>
-            <FieldGrid>
-              <Field label="Public directory consent">
-                <TextInput type="checkbox" name="public-directory-consent" />
-              </Field>
-            </FieldGrid>
-          </details>
-          <Button type="submit">Submit application</Button>
+          <Button type="submit" data-user-action={userActions.submitApplication}>
+            {registerPageContract.primaryActionLabel}
+          </Button>
           {status ? <Notice>{status}</Notice> : null}
         </FieldGrid>
       </form>
@@ -598,8 +694,8 @@ function AdminPage() {
   async function handleApproveRequest(request: RegistrationRequest) {
     setActionStatus(`Approving ${request.email}...`);
     try {
-      await approveRegistrationRequest(request.id);
-      setActionStatus(`Approved ${request.email}. They can now request a login link.`);
+      const result = await approveRegistrationRequest(request.id);
+      setActionStatus(`Approved ${request.email}. Temporary password: ${result.temporaryPassword}`);
       setRefreshKey((value) => value + 1);
     } catch (error) {
       setActionStatus(error instanceof Error ? error.message : 'Could not approve application.');
@@ -625,6 +721,17 @@ function AdminPage() {
       setRefreshKey((value) => value + 1);
     } catch (error) {
       setActionStatus(error instanceof Error ? error.message : 'Could not deactivate profile.');
+    }
+  }
+
+  async function handleResetProfilePassword(profile: ProfileAccount) {
+    setActionStatus(`Issuing temporary password for ${profile.email}...`);
+    try {
+      const result = await resetProfilePassword(profile.id);
+      setActionStatus(`Temporary password for ${profile.email}: ${result.temporaryPassword}`);
+      setRefreshKey((value) => value + 1);
+    } catch (error) {
+      setActionStatus(error instanceof Error ? error.message : 'Could not reset password.');
     }
   }
 
@@ -662,12 +769,17 @@ function AdminPage() {
               }`}
               actions={
                 <>
-                  <Button type="button" onClick={() => handleApproveRequest(request)}>
+                  <Button
+                    type="button"
+                    data-user-action={userActions.approveRegistrationRequest}
+                    onClick={() => handleApproveRequest(request)}
+                  >
                     Approve
                   </Button>
                   <Button
                     type="button"
                     tone="neutral"
+                    data-user-action={userActions.archiveRegistrationRequest}
                     onClick={() => handleArchiveRequest(request)}
                   >
                     Archive
@@ -675,7 +787,7 @@ function AdminPage() {
                 </>
               }
             >
-              {request.atlanticCanadaTie}
+              {request.townCity}
             </Row>
           ))}
         </RowList>
@@ -686,20 +798,25 @@ function AdminPage() {
             <Row
               key={profile.id}
               title={profile.name}
-              meta={`${profile.email} / ${profile.role} / ${profile.accessStatus}${profile.isOwner ? ' / owner' : ''}`}
+              meta={`${profile.email} / ${profile.role} / ${profile.accessStatus}${profile.passwordResetRequired ? ' / password reset required' : ''}${profile.isOwner ? ' / owner' : ''}`}
               actions={
                 <>
                   {profile.role !== 'organizer' ? (
                     <Button
                       type="button"
                       tone="neutral"
+                      data-user-action={userActions.promoteOrganizer}
                       onClick={() => handleSetProfileRole(profile, 'organizer')}
                     >
                       Make organizer
                     </Button>
                   ) : null}
                   {profile.role !== 'admin' ? (
-                    <Button type="button" onClick={() => handleSetProfileRole(profile, 'admin')}>
+                    <Button
+                      type="button"
+                      data-user-action={userActions.promoteAdmin}
+                      onClick={() => handleSetProfileRole(profile, 'admin')}
+                    >
                       Make admin
                     </Button>
                   ) : null}
@@ -707,6 +824,7 @@ function AdminPage() {
                     <Button
                       type="button"
                       tone="neutral"
+                      data-user-action={userActions.demoteMember}
                       onClick={() => handleSetProfileRole(profile, 'member')}
                     >
                       Demote to member
@@ -716,9 +834,20 @@ function AdminPage() {
                     <Button
                       type="button"
                       tone="neutral"
+                      data-user-action={userActions.deactivateProfile}
                       onClick={() => handleDeactivateProfile(profile)}
                     >
                       Deactivate
+                    </Button>
+                  ) : null}
+                  {profile.accessStatus === 'active' ? (
+                    <Button
+                      type="button"
+                      tone="neutral"
+                      data-user-action={userActions.resetMemberPassword}
+                      onClick={() => handleResetProfilePassword(profile)}
+                    >
+                      Reset password
                     </Button>
                   ) : null}
                 </>

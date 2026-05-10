@@ -384,3 +384,86 @@ On archive/deactivation:
 - writes `access_audit`
 
 Rationale: this preserves the private-community rule that login must never be signup, keeps service-role operations server-side only, and gives the app a durable, inspectable access lifecycle in production.
+
+## 2026-05-09 — Test infrastructure is capability-manifest driven EaC
+
+Freddy Founders testing now uses one app-wide capability/action manifest as the source of truth for product capabilities, native Cucumber Feature ownership, and user-visible action leaves.
+
+Canonical testing infrastructure:
+
+```text
+src/domain/userActions.ts
+  -> productCapabilities: Capability -> native Cucumber Feature files
+  -> actionCapabilities: Scenario action leaves and verification obligations
+  -> userActionWorkflows: stateful MBT models
+features/*.feature
+  -> native Cucumber Features tagged with @capability.<id>
+  -> scenarios tagged with @action.<id> when they exercise user-visible actions
+architecture/test-infrastructure.mmd
+  -> verification graph
+scripts/check-action-coverage.mjs
+  -> Capability -> Feature -> Scenario/action traceability
+  -> static source action annotation checks
+scripts/check-model-workflow-coverage.mjs
+  -> MBT obligation and workflow coverage gate
+scripts/test-model-workflows.mjs
+  -> executable deterministic MBT against application/domain services
+scripts/check-rendered-actions.mjs
+  -> rendered route interaction audit
+```
+
+Product capabilities own the upper layer: business capability -> Cucumber Feature files -> required action leaves. Cucumber owns Feature and Scenario text. Action tags are cross-cutting leaves that connect executable examples to the manifest's user-visible operations. High-risk durable mutations require MBT unless an explicit exemption reason is recorded. MBT obligations are not inferred from tests; they are declared by the action contract, checked against workflow models, and executed by deterministic model tests at the application/domain seam.
+
+Stateful workflow models are reserved for real state machines, currently:
+
+- `auth-access`: application, approval/archive, login eligibility, and deactivation
+- `admin-governance`: member/organizer/admin/owner role transitions and forbidden owner transitions
+
+Rationale: AI can maintain stricter contracts than a human-only process, but strictness should live in a single inspectable spec graph rather than forcing every route into a fake state machine.
+
+Executable MBT is split from structural MBT:
+
+- `model:check`: validates workflow obligations, states, transitions, forbidden transitions, and evidence references
+- `model:test`: executes every allowed and forbidden workflow edge against `AuthAccessService` plus `InMemoryAuthAccessRepository`
+
+The first executable MBT run exposed a product/model contradiction: the model forbade ordinary deactivation of the singleton owner, while `AuthAccessService.deactivateMember` allowed it. The service now rejects owner deactivation so product behavior matches the workflow contract.
+
+## 2026-05-10 — Business validation is credentialless deterministic evidence in v0
+
+Freddy Founders no longer requires a production Gemini key for application intake. The hard gate remains: a submitted company website must be fetchable and must produce enough deterministic business evidence before a pending application is created.
+
+Credentialless business evidence lives in `src/domain/websiteMetadata.ts` and is enforced by the Cloudflare Worker:
+
+```text
+submitted website
+  -> Worker fetch/scrape
+  -> metadata extraction
+  -> deterministic business-evidence score
+  -> pending application only when validation passes
+```
+
+The deterministic gate requires metadata plus at least one business signal, such as domain/company alignment or business-language evidence, and rejects parked/placeholder pages. This is stricter than accepting scrape success alone, but weaker than semantic LLM validation. Rationale: OMP search is an agent-side tool and cannot be reused by the deployed Worker; v0 must be deployable without hidden agent credentials.
+
+## 2026-05-10 — Approved access uses temporary passwords with mandatory reset
+
+Freddy Founders should transition normal authentication from passwordless magic-link login to email + password only.
+
+Approval creates or updates a Supabase Auth user with a generated temporary password and marks the corresponding profile as requiring a password reset. The first successful login with that temporary password must route the member to a password-reset screen before private app access. Reset completion updates the Supabase password and clears the profile reset-required flag.
+
+Password reset for existing approved members follows the same model: an admin/system reset issues a temporary password, marks reset required, and the member must choose a new password on next login.
+
+Signup remains disabled. Login must still be approved-profile-only, so unknown, pending, archived, or deactivated emails cannot authenticate or receive usable credentials.
+
+Rationale: this keeps access approval explicit and admin-controlled while removing magic-link login as the steady-state auth mechanism.
+
+## 2026-05-10 — Production deploys only from committed `main`
+
+Freddy Founders production deploys must not be run from a dirty local working tree or unpublished branch state. Production should reflect the repository source of truth:
+
+```text
+local changes -> commit -> push main -> CI gates -> deploy
+```
+
+Direct `wrangler deploy` from uncommitted local files is prohibited except for an explicit emergency override requested by the user in that moment.
+
+Rationale: production must not drift ahead of git history. `main` should be able to explain and reproduce what is live.

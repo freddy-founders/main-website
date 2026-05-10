@@ -1,3 +1,4 @@
+@capability.admin-governance
 Feature: Admin maintenance
   Admin is for simple maintenance and pending registration review.
 

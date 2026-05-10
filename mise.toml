@@ -46,6 +46,22 @@ run = "pnpm env:check"
 description = "Compile design tokens into app CSS variables"
 run = "pnpm tokens:build"
 
+[tasks."action:check"]
+description = "Validate capability manifest, source action annotations, and BDD action tags"
+run = "pnpm action:check"
+
+[tasks."action:rendered"]
+description = "Audit rendered route shells for declared user actions"
+run = "pnpm action:rendered"
+
+[tasks."model:check"]
+description = "Validate model-based workflow coverage obligations"
+run = "pnpm model:check"
+
+[tasks."model:test"]
+description = "Run executable model-based workflow tests"
+run = "pnpm model:test"
+
 
 [tasks."test:unit"]
 description = "Run TDD unit tests"

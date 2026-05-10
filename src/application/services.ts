@@ -1,9 +1,5 @@
 import { getEventRegistrationAction } from '../domain/events';
-import {
-  prepareFounderRegistrationRequest,
-  type AccountRole,
-  type RegistrationRequestInput,
-} from '../domain/accounts';
+import { type AccountRole, type RegistrationRequestInput } from '../domain/accounts';
 import type { CompanyRepository } from '../ports/companies';
 import type { AuthPort } from '../ports/auth';
 import type { EventRepository } from '../ports/events';
@@ -24,8 +20,9 @@ export function createApplicationServices(ports: ApplicationPorts) {
   return {
     auth: {
       getCurrentSession: () => ports.auth.getCurrentSession(),
-      sendMagicLink: (email: string, redirectTo?: string) =>
-        ports.auth.signInWithEmail(email, redirectTo),
+      signInWithPassword: (email: string, password: string) =>
+        ports.auth.signInWithPassword(email, password),
+      completePasswordReset: (newPassword: string) => ports.auth.completePasswordReset(newPassword),
       signOut: () => ports.auth.signOut(),
     },
     events: {
@@ -66,9 +63,7 @@ export function createApplicationServices(ports: ApplicationPorts) {
     },
     registrationRequests: {
       async createRegistrationRequest(input: RegistrationRequestInput) {
-        return ports.registrationRequests.createRegistrationRequest(
-          prepareFounderRegistrationRequest(input),
-        );
+        return ports.registrationRequests.createRegistrationRequest(input);
       },
     },
     admin: {

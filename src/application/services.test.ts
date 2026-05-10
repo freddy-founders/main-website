@@ -56,6 +56,7 @@ const profileRecords: ProfileAccount[] = [
     role: 'admin',
     isOwner: true,
     accessStatus: 'active',
+    passwordResetRequired: false,
     createdAt: '2026-05-08T00:00:00.000Z',
   },
   {
@@ -65,6 +66,7 @@ const profileRecords: ProfileAccount[] = [
     role: 'organizer',
     isOwner: false,
     accessStatus: 'active',
+    passwordResetRequired: false,
     createdAt: '2026-05-08T00:00:00.000Z',
   },
   {
@@ -74,6 +76,7 @@ const profileRecords: ProfileAccount[] = [
     role: 'member',
     isOwner: false,
     accessStatus: 'active',
+    passwordResetRequired: false,
     createdAt: '2026-05-08T00:00:00.000Z',
   },
 ];
@@ -83,7 +86,10 @@ function createPortsFixture(): ApplicationPorts {
       async getCurrentSession() {
         return null;
       },
-      async signInWithEmail() {},
+      async signInWithPassword() {
+        return 'authenticated' as const;
+      },
+      async completePasswordReset() {},
       async signOut() {},
     },
     events: {
@@ -125,9 +131,7 @@ function createPortsFixture(): ApplicationPorts {
             companyName: 'Example Co',
             companyWebsiteUrl: 'https://example.com',
             companyDomain: 'example.com',
-            role: 'Founder',
-            topics: ['Fundraising'],
-            atlanticCanadaTie: 'Building from Fredericton.',
+            townCity: 'Fredericton, NB',
             publicDirectoryConsent: false,
             isCompanyFounder: true,
             status: 'pending',
@@ -176,43 +180,25 @@ describe('application services', () => {
     await expect(services.admin.listProfiles('admin')).resolves.toHaveLength(3);
   });
 
-  it('normalizes founder registration requests before the adapter boundary', async () => {
+  it('passes registration intake to the adapter scrape boundary', async () => {
     const ports = createPortsFixture();
-    let capturedCompanyDomain = '';
+    let capturedCompanyWebsiteUrl = '';
+    let capturedTownCity = '';
     ports.registrationRequests.createRegistrationRequest = async (input) => {
-      capturedCompanyDomain = input.companyDomain;
+      capturedCompanyWebsiteUrl = input.companyWebsiteUrl;
+      capturedTownCity = input.townCity;
     };
     const services = createApplicationServices(ports);
 
     await services.registrationRequests.createRegistrationRequest({
       name: ' Pending Founder ',
       email: 'PENDING@EXAMPLE.COM',
-      companyName: ' Example Co ',
       companyWebsiteUrl: 'www.example.com/join',
-      role: ' Founder ',
-      atlanticCanadaTie: ' Building in Fredericton. ',
-      topics: [' AI ', ''],
-      publicDirectoryConsent: false,
+      townCity: 'Fredericton, NB',
       isCompanyFounder: true,
     });
 
-    expect(capturedCompanyDomain).toBe('example.com');
-  });
-
-  it('rejects registration requests without founder affirmation', async () => {
-    const services = createApplicationServices(createPortsFixture());
-
-    await expect(
-      services.registrationRequests.createRegistrationRequest({
-        name: 'Pending Founder',
-        email: 'pending@example.com',
-        companyName: 'Example Co',
-        companyWebsiteUrl: 'https://example.com',
-        atlanticCanadaTie: 'Building in Fredericton.',
-        topics: [],
-        publicDirectoryConsent: false,
-        isCompanyFounder: false,
-      }),
-    ).rejects.toThrow('Founder affirmation is required.');
+    expect(capturedCompanyWebsiteUrl).toBe('www.example.com/join');
+    expect(capturedTownCity).toBe('Fredericton, NB');
   });
 });

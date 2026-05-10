@@ -1,0 +1,37 @@
+flowchart TD
+  Manifest[src/domain/userActions.ts\nEaC verification manifest]
+  ProductCaps[productCapabilities\nBusiness Capability layer]
+  NativeFeatures[features/*.feature\nNative Cucumber Features]
+  Scenarios[Cucumber Scenarios\nExecutable examples]
+  Actions[actionCapabilities\nUser action leaves]
+  Workflows[userActionWorkflows\nStateful MBT models]
+  Source[src/**/*.tsx\nAnnotated UI source]
+  Rendered[React render audit\npublic/private route shells]
+  Unit[Vitest unit tests\nDomain + application invariants]
+  Contracts[Worker/Supabase contracts\nEnv + smoke gates]
+  CI[Git hooks + GitHub Actions\nEaC verification gate]
+
+  Manifest --> ProductCaps --> NativeFeatures --> Scenarios --> Actions
+  Manifest --> Actions
+  Manifest --> Workflows
+  Actions --> Workflows
+  Actions --> Source
+  Actions --> Rendered
+  Workflows --> ModelCheck[pnpm model:check\nMBT obligation coverage]
+  Workflows --> ModelTest[pnpm model:test\nExecutable deterministic MBT]
+  ProductCaps --> ActionCheck[pnpm action:check\nCapability -> Feature -> Scenario/action traceability]
+  NativeFeatures --> ActionCheck
+  Source --> ActionCheck
+  Rendered --> RenderCheck[pnpm action:rendered\nRendered interaction audit]
+  Unit --> Check[pnpm check]
+  Contracts --> Check
+  ActionCheck --> Check
+  ModelCheck --> Check
+  ModelTest --> Check
+  RenderCheck --> Check
+  Check --> CI
+
+  ProductCaps -. own .-> CapRule[Capability fields\nid + feature files + required actions + workflows]
+  NativeFeatures -. carry .-> CapTag[@capability.id]
+  Scenarios -. carry .-> ActionTag[@action.id]
+  Workflows -. require .-> MBT[MBT coverage\nstates + transitions + forbidden transitions + executable edges]

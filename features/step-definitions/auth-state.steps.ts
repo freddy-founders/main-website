@@ -8,10 +8,11 @@ import type { FreddyWorld } from '../support/world';
 type AuthScenarioState = {
   service: AuthAccessService;
   lastApplicationAttempt: ReturnType<AuthAccessService['submitFounderApplication']> | null;
-  lastLoginRequest: ReturnType<AuthAccessService['requestMagicLoginLink']> | null;
+  lastLoginRequest: ReturnType<AuthAccessService['requestPasswordLogin']> | null;
+  lastTemporaryPassword: string | null;
+  lastPasswordResetComplete: boolean | null;
   lastAccess: 'granted' | 'denied' | null;
   lastPermission: boolean | null;
-  lastMagicLoginResult: 'authenticated' | 'rejected' | null;
   lastReview: AccessStateReview | null;
 };
 
@@ -22,9 +23,10 @@ function createState(): AuthScenarioState {
     service: createAuthAccessService(new InMemoryAuthAccessRepository()),
     lastApplicationAttempt: null,
     lastLoginRequest: null,
+    lastTemporaryPassword: null,
+    lastPasswordResetComplete: null,
     lastAccess: null,
     lastPermission: null,
-    lastMagicLoginResult: null,
     lastReview: null,
   };
 }
@@ -80,10 +82,9 @@ When(
   '{string} submits a complete founder application without public directory consent',
   function (this: FreddyWorld, email: string) {
     const state = stateFor(this);
-    state.lastApplicationAttempt = state.service.submitFounderApplication({
-      ...completeApplicationFor(state.service, email),
-      publicDirectoryConsent: false,
-    });
+    state.lastApplicationAttempt = state.service.submitFounderApplication(
+      completeApplicationFor(state.service, email),
+    );
   },
 );
 
@@ -95,11 +96,46 @@ When(
 
     if (field === 'name') input.name = '';
     if (field === 'email') input.email = '';
-    if (field === 'company name') input.companyName = '';
     if (field === 'company website') input.companyWebsiteUrl = '';
-    if (field === 'Atlantic Canada tie') input.atlanticCanadaTie = '';
+    if (field === 'Town/City') input.townCity = '';
 
     state.lastApplicationAttempt = state.service.submitFounderApplication(input);
+  },
+);
+
+When(
+  '{string} submits an application whose company website cannot be scraped',
+  function (this: FreddyWorld, email: string) {
+    const state = stateFor(this);
+    state.lastApplicationAttempt = state.service.submitFounderApplicationAfterWebsiteValidation(
+      completeApplicationFor(state.service, email),
+      false,
+      false,
+    );
+  },
+);
+
+When(
+  '{string} submits an application whose company website scrapes but cannot be validated as a business',
+  function (this: FreddyWorld, email: string) {
+    const state = stateFor(this);
+    state.lastApplicationAttempt = state.service.submitFounderApplicationAfterWebsiteValidation(
+      completeApplicationFor(state.service, email),
+      true,
+      false,
+    );
+  },
+);
+
+When(
+  '{string} submits an application whose company website scrapes and validates as a business',
+  function (this: FreddyWorld, email: string) {
+    const state = stateFor(this);
+    state.lastApplicationAttempt = state.service.submitFounderApplicationAfterWebsiteValidation(
+      completeApplicationFor(state.service, email),
+      true,
+      true,
+    );
   },
 );
 
@@ -213,12 +249,9 @@ Then('no session exists for {string}', function (this: FreddyWorld, email: strin
   assert.equal(stateFor(this).service.hasSession(email), false);
 });
 
-Then(
-  '{string} is not eligible for a magic login link',
-  function (this: FreddyWorld, email: string) {
-    assert.equal(stateFor(this).service.canRequestMagicLink(email), false);
-  },
-);
+Then('{string} is not eligible for password login', function (this: FreddyWorld, email: string) {
+  assert.equal(stateFor(this).service.canAttemptPasswordLogin(email), false);
+});
 
 Then('the application is rejected before becoming pending', function (this: FreddyWorld) {
   assert.equal(stateFor(this).lastApplicationAttempt?.accepted, false);
@@ -239,6 +272,17 @@ Then(
 
 Then('the second application is blocked', function (this: FreddyWorld) {
   assert.equal(stateFor(this).lastApplicationAttempt?.blockedReason, 'duplicate-pending');
+});
+
+Then('no fallback company name is derived from the submitted domain', function (this: FreddyWorld) {
+  assert.equal(stateFor(this).lastApplicationAttempt?.blockedReason, 'website-scrape-failed');
+});
+
+Then('no pending application is created without business validation', function (this: FreddyWorld) {
+  const email = stateFor(this).lastApplicationAttempt?.email;
+  assert.ok(email, 'expected an application attempt');
+  assert.equal(stateFor(this).lastApplicationAttempt?.blockedReason, 'business-validation-failed');
+  assert.equal(stateFor(this).service.activePendingApplicationCount(email), 0);
 });
 
 Then(
@@ -306,11 +350,11 @@ Then(
   },
 );
 
-Then('the approval notice does not contain a magic sign-in link', function (this: FreddyWorld) {
+Then('the approval notice contains a temporary password', function (this: FreddyWorld) {
   assert.ok(
     stateFor(this)
       .service.noticesFor('')
-      .every((notice) => !notice.includesMagicSignInLink),
+      .some((notice) => notice.includesTemporaryPassword),
   );
 });
 
@@ -318,27 +362,52 @@ Then('no applicant notification is sent to {string}', function (this: FreddyWorl
   assert.equal(stateFor(this).service.notificationsFor(email).length, 0);
 });
 
-When('{string} requests a magic login link', function (this: FreddyWorld, email: string) {
+Given(
+  'an active approved member account requiring password reset exists for {string}',
+  function (this: FreddyWorld, email: string) {
+    const result = stateFor(this).service.createAccountRequiringPasswordReset(email);
+    stateFor(this).lastTemporaryPassword = result.temporaryPassword;
+  },
+);
+
+When(
+  '{string} logs in with password {string}',
+  function (this: FreddyWorld, email: string, password: string) {
+    const state = stateFor(this);
+    state.lastLoginRequest = state.service.requestPasswordLogin(email, password);
+  },
+);
+
+When('{string} logs in with their temporary password', function (this: FreddyWorld, email: string) {
   const state = stateFor(this);
-  state.lastLoginRequest = state.service.requestMagicLoginLink(email);
+  const temporaryPassword =
+    state.lastTemporaryPassword ?? state.service.accountFor(email)?.temporaryPassword;
+  assert.ok(temporaryPassword, 'expected a temporary password');
+  state.lastLoginRequest = state.service.requestPasswordLogin(email, temporaryPassword);
 });
 
-Then('a magic login link is sent to {string}', function (this: FreddyWorld, email: string) {
-  const state = stateFor(this);
-  assert.equal(state.lastLoginRequest?.email, normalizeAuthEmail(email));
-  assert.equal(state.lastLoginRequest.sent, true);
-  assert.ok(state.service.latestMagicLinkFor(email));
+Then('a member session exists for {string}', function (this: FreddyWorld, email: string) {
+  assert.equal(stateFor(this).service.hasSession(email), true);
 });
 
-Then('no magic login link is sent to {string}', function (this: FreddyWorld, email: string) {
-  const state = stateFor(this);
-  assert.equal(state.lastLoginRequest?.email, normalizeAuthEmail(email));
-  assert.equal(state.lastLoginRequest.sent, false);
-  assert.equal(state.service.latestMagicLinkFor(email), null);
+Then('no member session exists for {string}', function (this: FreddyWorld, email: string) {
+  assert.equal(stateFor(this).service.hasSession(email), false);
 });
 
-Then('the login response is generic and safe', function (this: FreddyWorld) {
-  assert.equal(stateFor(this).lastLoginRequest?.genericResponse, true);
+Then('the login response is authenticated', function (this: FreddyWorld) {
+  assert.equal(stateFor(this).lastLoginRequest?.status, 'authenticated');
+});
+
+Then('the login response requires password reset', function (this: FreddyWorld) {
+  assert.equal(stateFor(this).lastLoginRequest?.status, 'reset-required');
+});
+
+Then('the login response says the credentials are invalid', function (this: FreddyWorld) {
+  assert.ok(
+    ['missing-account', 'invalid-credentials'].includes(
+      stateFor(this).lastLoginRequest?.status ?? '',
+    ),
+  );
 });
 
 Then(
@@ -348,68 +417,47 @@ Then(
   },
 );
 
-Given('a fresh magic login link exists for {string}', function (this: FreddyWorld, email: string) {
-  stateFor(this).service.issueFreshMagicLoginLink(email);
+Then('password reset is required for {string}', function (this: FreddyWorld, email: string) {
+  assert.equal(stateFor(this).service.accountFor(email)?.passwordResetRequired, true);
+});
+
+Then(
+  'password reset is no longer required for {string}',
+  function (this: FreddyWorld, email: string) {
+    assert.equal(stateFor(this).service.accountFor(email)?.passwordResetRequired, false);
+  },
+);
+
+Then('{string} can open the password reset route', function (this: FreddyWorld, email: string) {
+  assert.equal(stateFor(this).service.openRoute(email, '/reset-password'), 'granted');
+});
+
+Then('{string} can enter private app routes', function (this: FreddyWorld, email: string) {
+  const service = stateFor(this).service;
+  for (const route of ['/events', '/people', '/companies']) {
+    assert.equal(service.openRoute(email, route), 'granted');
+  }
 });
 
 When(
-  'the magic login link for {string} becomes {string}',
-  function (this: FreddyWorld, email: string, linkState: string) {
-    if (linkState !== 'expired' && linkState !== 'used') {
-      throw new Error(`Unknown magic-link state: ${linkState}`);
-    }
-
-    stateFor(this).service.markLatestMagicLink(email, linkState);
+  '{string} completes the password reset with {string}',
+  function (this: FreddyWorld, email: string, newPassword: string) {
+    const state = stateFor(this);
+    state.lastPasswordResetComplete = state.service.completePasswordReset(email, newPassword);
   },
 );
 
-When('{string} uses that magic login link', function (this: FreddyWorld, email: string) {
-  const state = stateFor(this);
-  state.lastMagicLoginResult = state.service.useLatestMagicLoginLink(email);
+When('an admin resets the password for {string}', function (this: FreddyWorld, email: string) {
+  const result = stateFor(this).service.resetMemberPassword(email);
+  stateFor(this).lastTemporaryPassword = result.temporaryPassword;
 });
 
-When(
-  'a second magic login link is issued for {string}',
-  function (this: FreddyWorld, email: string) {
-    stateFor(this).service.issueSecondMagicLoginLink(email);
-  },
-);
-
-Then('the magic login attempt is rejected safely', function (this: FreddyWorld) {
-  assert.equal(stateFor(this).lastMagicLoginResult, 'rejected');
+Then('a temporary password is issued for {string}', function (this: FreddyWorld, email: string) {
+  assert.equal(
+    stateFor(this).service.accountFor(email)?.temporaryPassword,
+    stateFor(this).lastTemporaryPassword,
+  );
 });
-
-Then(
-  'the first magic login link for {string} is rejected safely',
-  function (this: FreddyWorld, email: string) {
-    assert.equal(stateFor(this).service.useFirstMagicLoginLink(email), 'rejected');
-  },
-);
-
-Then(
-  'the latest magic login link for {string} can authenticate the member',
-  function (this: FreddyWorld, email: string) {
-    assert.equal(stateFor(this).service.useLatestMagicLoginLink(email), 'authenticated');
-  },
-);
-
-Then(
-  'the magic login link for {string} redirects to {string}',
-  function (this: FreddyWorld, email: string, redirectBase: string) {
-    assert.ok(
-      stateFor(this).service.latestMagicLinkFor(email)?.redirectTo.startsWith(redirectBase),
-    );
-  },
-);
-
-Then(
-  'the magic login email for {string} does not contain localhost',
-  function (this: FreddyWorld, email: string) {
-    const redirectTo = stateFor(this).service.latestMagicLinkFor(email)?.redirectTo ?? '';
-    assert.equal(redirectTo.includes('localhost'), false);
-    assert.equal(redirectTo.includes('127.0.0.1'), false);
-  },
-);
 
 When('{string} opens {string}', function (this: FreddyWorld, email: string, route: string) {
   const state = stateFor(this);
@@ -493,13 +541,6 @@ Then('{string} cannot enter private app routes', function (this: FreddyWorld, em
     assert.equal(service.openRoute(email, route), 'denied');
   }
 });
-
-Then(
-  'the old magic login link for {string} is rejected safely',
-  function (this: FreddyWorld, email: string) {
-    assert.equal(stateFor(this).service.useFirstMagicLoginLink(email), 'rejected');
-  },
-);
 
 Then(
   '{string} appears as deactivated in admin access state',
