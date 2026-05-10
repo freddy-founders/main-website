@@ -7,6 +7,7 @@ const expectedKeys = [
   'VITE_SUPABASE_ANON_KEY',
   'SUPABASE_SERVICE_ROLE_KEY',
   'GEMINI_API_KEY',
+  'INTEGRATION_SECRET_ENCRYPTION_KEY',
   'GEMINI_MODEL',
   'CLOUDFLARE_API_TOKEN',
   'CLOUDFLARE_ACCOUNT_ID',
@@ -75,6 +76,13 @@ if (process.argv.includes('--cloudflare-deploy')) {
 
 if (hasValue(env.GEMINI_MODEL) && !/^gemini-[a-z0-9.-]+$/.test(env.GEMINI_MODEL)) {
   errors.push('GEMINI_MODEL must be a Gemini model id');
+}
+
+if (
+  hasValue(env.INTEGRATION_SECRET_ENCRYPTION_KEY) &&
+  env.INTEGRATION_SECRET_ENCRYPTION_KEY.length < 32
+) {
+  errors.push('INTEGRATION_SECRET_ENCRYPTION_KEY should be at least 32 characters');
 }
 
 if (process.argv.includes('--supabase-activation')) {

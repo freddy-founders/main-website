@@ -7,7 +7,9 @@ import {
   deactivateProfile,
   listPendingRegistrationRequests,
   listProfiles,
+  removeGoogleAiApiKey,
   resetProfilePassword,
+  saveGoogleAiApiKey,
   setProfileRole,
 } from './application/admin';
 import { completePasswordReset, getCurrentSession, signInWithPassword } from './application/auth';
@@ -897,10 +899,42 @@ function AdminPage() {
 function AdminIntegrationsPage() {
   const session = useAsyncValue(getCurrentSession, []);
   const role = session?.role ?? null;
-  const integrationStatus = useAsyncValue<GoogleAiIntegrationStatus>(
-    getGoogleAiIntegrationStatus,
-    [],
-  );
+  const [refreshKey, setRefreshKey] = useState(0);
+  const [actionStatus, setActionStatus] = useState<string | null>(null);
+  const integrationStatus = useAsyncValue<GoogleAiIntegrationStatus>(getGoogleAiIntegrationStatus, [
+    refreshKey,
+  ]);
+
+  async function handleSaveApiKey(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const form = event.currentTarget;
+    const formData = new FormData(form);
+    setActionStatus('Saving Gemini API key...');
+
+    try {
+      await saveGoogleAiApiKey({
+        apiKey: String(formData.get('gemini-api-key') ?? ''),
+        modelId: String(formData.get('gemini-model-id') ?? ''),
+      });
+      form.reset();
+      setActionStatus('Gemini API key saved.');
+      setRefreshKey((value) => value + 1);
+    } catch (error) {
+      setActionStatus(error instanceof Error ? error.message : 'Could not save Gemini API key.');
+    }
+  }
+
+  async function handleRemoveApiKey() {
+    setActionStatus('Removing saved Gemini API key...');
+
+    try {
+      await removeGoogleAiApiKey();
+      setActionStatus('Saved Gemini API key removed.');
+      setRefreshKey((value) => value + 1);
+    } catch (error) {
+      setActionStatus(error instanceof Error ? error.message : 'Could not remove Gemini API key.');
+    }
+  }
 
   if (role !== 'admin') {
     return (
@@ -928,10 +962,12 @@ function AdminIntegrationsPage() {
         eyebrow={googleAiIntegrationContract.pageEyebrow}
       >
         <Notice>{statusCopy}</Notice>
+        {actionStatus ? <Notice>{actionStatus}</Notice> : null}
         <FieldList
           items={[
             'Provider / Gemini API key with Google Search grounding',
-            `Server key / ${integrationStatus?.configured ? 'Configured' : 'Missing'}`,
+            `Source / ${integrationStatus?.apiKeySource ?? 'loading'}`,
+            `Fingerprint / ${integrationStatus?.keyFingerprint ?? 'Not saved'}`,
             `Model / ${integrationStatus?.modelId ?? defaultGoogleAiModel}`,
             `Missing config / ${
               integrationStatus && integrationStatus.missingConfig.length > 0
@@ -941,22 +977,53 @@ function AdminIntegrationsPage() {
           ]}
         />
       </Panel>
-      <Panel title={googleAiIntegrationContract.setupTitle} eyebrow="Server Secret">
+      <Panel title={googleAiIntegrationContract.setupTitle} eyebrow="Admin Managed Secret">
         <p>
-          Set GEMINI_API_KEY as a Cloudflare Worker secret. The browser never receives the key; the
-          Worker calls the official Gemini API server-side during application intake.
+          Paste a Gemini API key here to store it encrypted server-side. The key is never rendered
+          back to the browser; only its fingerprint is shown after saving.
         </p>
-        <FieldList
-          items={[
-            'Secret / pnpm exec wrangler secret put GEMINI_API_KEY',
-            `Optional model / GEMINI_MODEL=${integrationStatus?.modelId ?? defaultGoogleAiModel}`,
-            'Fallback / deterministic website evidence remains active when the key is missing',
-          ]}
-        />
+        <form onSubmit={handleSaveApiKey} data-user-action={userActions.saveGoogleAiApiKey}>
+          <FieldGrid>
+            <Field label={googleAiIntegrationContract.apiKeyLabel}>
+              <TextInput
+                type="password"
+                name="gemini-api-key"
+                autoComplete="off"
+                placeholder="AIza..."
+                required
+              />
+            </Field>
+            <Field label={googleAiIntegrationContract.modelLabel}>
+              <TextInput
+                name="gemini-model-id"
+                placeholder={integrationStatus?.modelId ?? defaultGoogleAiModel}
+                defaultValue={integrationStatus?.modelId ?? defaultGoogleAiModel}
+                required
+              />
+            </Field>
+            <Button type="submit" data-user-action={userActions.saveGoogleAiApiKey}>
+              {googleAiIntegrationContract.saveActionLabel}
+            </Button>
+          </FieldGrid>
+        </form>
+      </Panel>
+      <Panel title="Remove saved key" eyebrow="Provider Control">
+        <p>
+          Removing the saved admin-managed key returns intake to deterministic website evidence
+          unless a Worker-level GEMINI_API_KEY secret is still configured.
+        </p>
+        <Button
+          type="button"
+          tone="neutral"
+          data-user-action={userActions.removeGoogleAiApiKey}
+          onClick={handleRemoveApiKey}
+        >
+          {googleAiIntegrationContract.removeActionLabel}
+        </Button>
       </Panel>
       <Rail
         title="Credential model"
-        copy="Freddy uses one server-side Gemini API key from Google AI Studio. No OAuth client, redirect URI, refresh token, or Supabase integration secret is required."
+        copy="Freddy stores the admin-entered Gemini key encrypted in Supabase using a Worker-only encryption secret. The browser can submit or remove the key, but it can never read it back."
         stats={[
           { value: integrationStatus?.connected ? 'YES' : 'NO', label: 'Enabled' },
           { value: integrationStatus?.configured ? 'YES' : 'NO', label: 'Configured' },

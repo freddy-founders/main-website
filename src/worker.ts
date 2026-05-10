@@ -13,6 +13,7 @@ import {
 } from './domain/websiteMetadata';
 import {
   missingGoogleAiIntegrationConfig,
+  normalizeGeminiApiKey,
   normalizeGoogleAiModelId,
 } from './domain/googleAiIntegration';
 type AssetsBinding = {
@@ -26,6 +27,7 @@ type WorkerEnv = {
   APP_ORIGIN?: string;
   GEMINI_API_KEY?: string;
   GEMINI_MODEL?: string;
+  INTEGRATION_SECRET_ENCRYPTION_KEY?: string;
 };
 
 type AdminProfile = {
@@ -38,6 +40,7 @@ type AdminProfile = {
 
 type RegistrationRequestRow = Database['public']['Tables']['registration_requests']['Row'];
 type ProfileRow = Database['public']['Tables']['profiles']['Row'];
+type IntegrationSecretRow = Database['public']['Tables']['integration_secrets']['Row'];
 
 type ApiHandler = (
   request: Request,
@@ -61,6 +64,7 @@ const jsonHeaders = {
 };
 
 const geminiGenerateContentBaseUrl = 'https://generativelanguage.googleapis.com/v1beta/models';
+const googleAiApiKeyProvider = 'google_gemini_api_key';
 
 function generateTemporaryPassword(): string {
   const alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789';
@@ -130,6 +134,14 @@ function matchApiRoute(method: string, pathname: string): ApiHandler | null {
     return getGoogleAiIntegrationStatus;
   }
 
+  if (method === 'POST' && pathname === '/api/admin/integrations/google-ai/api-key') {
+    return saveGoogleAiApiKey;
+  }
+
+  if (method === 'POST' && pathname === '/api/admin/integrations/google-ai/api-key/remove') {
+    return removeGoogleAiApiKey;
+  }
+
   if (method !== 'POST') return null;
 
   if (/^\/api\/admin\/registration-requests\/[^/]+\/approve$/.test(pathname)) {
@@ -167,7 +179,12 @@ async function submitRegistrationRequest(
     return json({ error: 'Could not read company website. Check the URL and try again.' }, 422);
   }
 
-  const validation = await validateBusinessWebsite(input.companyWebsiteUrl, scrape.metadata, env);
+  const validation = await validateBusinessWebsite(
+    input.companyWebsiteUrl,
+    scrape.metadata,
+    env,
+    adminClient,
+  );
   if (!validation.ok) {
     return json({ error: 'Could not validate company website as an active business.' }, 422);
   }
@@ -251,11 +268,13 @@ async function validateBusinessWebsite(
   companyWebsiteUrl: string,
   metadata: CompanyWebsiteMetadata,
   env: WorkerEnv,
+  adminClient: SupabaseClient<Database>,
 ): Promise<BusinessValidationResult> {
   const googleAiValidation = await validateBusinessWebsiteWithGoogleAi(
     companyWebsiteUrl,
     metadata,
     env,
+    adminClient,
   );
 
   if (googleAiValidation) {
@@ -269,16 +288,17 @@ async function validateBusinessWebsiteWithGoogleAi(
   companyWebsiteUrl: string,
   metadata: CompanyWebsiteMetadata,
   env: WorkerEnv,
+  adminClient: SupabaseClient<Database>,
 ): Promise<BusinessValidationResult | null> {
-  const missingConfig = missingGoogleAiIntegrationConfig(env);
-  if (missingConfig.length > 0) {
+  const credential = await resolveGeminiApiKey(env, adminClient);
+  if (!credential) {
     return null;
   }
 
   try {
     const responseText = await callGeminiGoogleSearchValidation(
-      env.GEMINI_API_KEY ?? '',
-      normalizeGoogleAiModelId(env.GEMINI_MODEL),
+      credential.apiKey,
+      credential.modelId,
       companyWebsiteUrl,
       metadata,
     );
@@ -289,6 +309,14 @@ async function validateBusinessWebsiteWithGoogleAi(
         ok: false,
         reason: parsed.reason || 'Google AI could not validate the website as an active business.',
       };
+    }
+
+    if (credential.record) {
+      const now = new Date().toISOString();
+      await adminClient
+        .from('integration_secrets')
+        .update({ last_validated_at: now, updated_at: now })
+        .eq('provider', googleAiApiKeyProvider);
     }
 
     return {
@@ -379,6 +407,88 @@ function parseGoogleAiBusinessValidation(text: string): {
   };
 }
 
+async function resolveGeminiApiKey(
+  env: WorkerEnv,
+  adminClient: SupabaseClient<Database>,
+): Promise<{
+  apiKey: string;
+  modelId: string;
+  source: 'worker-secret' | 'admin-managed';
+  record: IntegrationSecretRow | null;
+} | null> {
+  if (hasValue(env.GEMINI_API_KEY)) {
+    return {
+      apiKey: normalizeGeminiApiKey(env.GEMINI_API_KEY),
+      modelId: normalizeGoogleAiModelId(env.GEMINI_MODEL),
+      source: 'worker-secret',
+      record: null,
+    };
+  }
+
+  const savedSecret = await getSavedGoogleAiSecret(adminClient);
+  const encryptionSecret = env.INTEGRATION_SECRET_ENCRYPTION_KEY;
+  if (!savedSecret || !hasValue(encryptionSecret)) {
+    return null;
+  }
+
+  try {
+    return {
+      apiKey: normalizeGeminiApiKey(
+        await decryptIntegrationSecret(savedSecret.encrypted_secret, encryptionSecret),
+      ),
+      modelId: normalizeGoogleAiModelId(savedSecret.model_id),
+      source: 'admin-managed',
+      record: savedSecret,
+    };
+  } catch {
+    return null;
+  }
+}
+
+async function buildGoogleAiIntegrationStatus(
+  env: WorkerEnv,
+  adminClient: SupabaseClient<Database>,
+) {
+  const savedSecret = await getSavedGoogleAiSecret(adminClient);
+  const missingConfig = missingGoogleAiIntegrationConfig(env, Boolean(savedSecret));
+  const hasWorkerSecret = hasValue(env.GEMINI_API_KEY);
+  const hasUsableSavedSecret =
+    Boolean(savedSecret) && !missingConfig.includes('INTEGRATION_SECRET_ENCRYPTION_KEY');
+  const configured = hasWorkerSecret || hasUsableSavedSecret;
+
+  return {
+    configured,
+    connected: configured,
+    missingConfig,
+    apiKeySource: hasWorkerSecret
+      ? 'worker-secret'
+      : hasUsableSavedSecret
+        ? 'admin-managed'
+        : 'missing',
+    keyFingerprint: savedSecret?.secret_fingerprint ?? (hasWorkerSecret ? 'worker-secret' : null),
+    modelId: normalizeGoogleAiModelId(savedSecret?.model_id ?? env.GEMINI_MODEL),
+    connectedAt: savedSecret?.configured_at ?? null,
+    lastValidatedAt: savedSecret?.last_validated_at ?? null,
+  };
+}
+
+async function getSavedGoogleAiSecret(
+  adminClient: SupabaseClient<Database>,
+): Promise<IntegrationSecretRow | null> {
+  const { data, error } = await adminClient
+    .from('integration_secrets')
+    .select('*')
+    .eq('provider', googleAiApiKeyProvider)
+    .maybeSingle();
+
+  if (error) {
+    if (isMissingRelationError(error)) return null;
+    throw error;
+  }
+
+  return data;
+}
+
 async function requireAdmin(
   request: Request,
   _env: WorkerEnv,
@@ -422,20 +532,92 @@ async function getGoogleAiIntegrationStatus(
   _request: Request,
   env: WorkerEnv,
   _url: URL,
-  _adminClient: SupabaseClient<Database>,
+  adminClient: SupabaseClient<Database>,
   _actor: AdminProfile,
 ): Promise<Response> {
-  const missingConfig = missingGoogleAiIntegrationConfig(env);
-  const configured = missingConfig.length === 0;
+  return json(await buildGoogleAiIntegrationStatus(env, adminClient));
+}
 
-  return json({
-    configured,
-    connected: configured,
-    missingConfig,
-    modelId: normalizeGoogleAiModelId(env.GEMINI_MODEL),
-    connectedAt: null,
-    lastValidatedAt: null,
+async function saveGoogleAiApiKey(
+  request: Request,
+  env: WorkerEnv,
+  _url: URL,
+  adminClient: SupabaseClient<Database>,
+  actor: AdminProfile,
+): Promise<Response> {
+  const encryptionSecret = env.INTEGRATION_SECRET_ENCRYPTION_KEY;
+  if (!hasValue(encryptionSecret)) {
+    return json({ error: 'INTEGRATION_SECRET_ENCRYPTION_KEY is required to save API keys.' }, 503);
+  }
+
+  const input = (await request.json().catch(() => null)) as {
+    apiKey?: unknown;
+    modelId?: unknown;
+  } | null;
+
+  let apiKey: string;
+  let modelId: string;
+  try {
+    apiKey = normalizeGeminiApiKey(typeof input?.apiKey === 'string' ? input.apiKey : '');
+    modelId = normalizeGoogleAiModelId(
+      typeof input?.modelId === 'string' && input.modelId.trim() ? input.modelId : env.GEMINI_MODEL,
+    );
+  } catch (error) {
+    return json(
+      { error: error instanceof Error ? error.message : 'Invalid Google AI API key setup.' },
+      400,
+    );
+  }
+
+  const now = new Date().toISOString();
+  const encryptedSecret = await encryptIntegrationSecret(apiKey, encryptionSecret);
+  const secretFingerprint = await fingerprintSecret(apiKey);
+
+  const { error } = await adminClient.from('integration_secrets').upsert(
+    {
+      provider: googleAiApiKeyProvider,
+      encrypted_secret: encryptedSecret,
+      secret_fingerprint: secretFingerprint,
+      model_id: modelId,
+      configured_by_profile_id: actor.id,
+      configured_at: now,
+      updated_at: now,
+    },
+    { onConflict: 'provider' },
+  );
+
+  if (error) throw error;
+
+  await insertAccessAudit(adminClient, actor, {
+    action: 'save google ai api key',
+    targetEmail: actor.email,
+    metadata: { provider: googleAiApiKeyProvider, secretFingerprint, modelId },
   });
+
+  return json(await buildGoogleAiIntegrationStatus(env, adminClient));
+}
+
+async function removeGoogleAiApiKey(
+  _request: Request,
+  env: WorkerEnv,
+  _url: URL,
+  adminClient: SupabaseClient<Database>,
+  actor: AdminProfile,
+): Promise<Response> {
+  const { error } = await adminClient
+    .from('integration_secrets')
+    .delete()
+    .eq('provider', googleAiApiKeyProvider);
+
+  if (error) throw error;
+
+  await insertAccessAudit(adminClient, actor, {
+    action: 'remove google ai api key',
+    targetEmail: actor.email,
+    metadata: { provider: googleAiApiKeyProvider },
+  });
+
+  return json(await buildGoogleAiIntegrationStatus(env, adminClient));
 }
 
 async function approveRegistrationRequest(
@@ -749,6 +931,76 @@ async function insertAccessAudit(
   });
 
   if (error) throw error;
+}
+
+async function encryptIntegrationSecret(value: string, secret: string): Promise<string> {
+  const iv = crypto.getRandomValues(new Uint8Array(12));
+  const key = await integrationEncryptionKey(secret);
+  const encrypted = await crypto.subtle.encrypt(
+    { name: 'AES-GCM', iv: exactArrayBuffer(iv) },
+    key,
+    new TextEncoder().encode(value),
+  );
+  return `v1.${bytesToBase64(iv)}.${bytesToBase64(new Uint8Array(encrypted))}`;
+}
+
+async function decryptIntegrationSecret(value: string, secret: string): Promise<string> {
+  const [version, ivBase64, encryptedBase64] = value.split('.');
+  if (version !== 'v1' || !ivBase64 || !encryptedBase64) {
+    throw new Error('Integration secret is not readable.');
+  }
+
+  const key = await integrationEncryptionKey(secret);
+  const iv = base64ToBytes(ivBase64);
+  const encryptedBytes = base64ToBytes(encryptedBase64);
+  const decrypted = await crypto.subtle.decrypt(
+    { name: 'AES-GCM', iv: exactArrayBuffer(iv) },
+    key,
+    exactArrayBuffer(encryptedBytes),
+  );
+  return new TextDecoder().decode(decrypted);
+}
+
+async function integrationEncryptionKey(secret: string): Promise<CryptoKey> {
+  if (!secret.trim()) {
+    throw new Error('Integration encryption key is not configured.');
+  }
+
+  const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(secret));
+  return crypto.subtle.importKey('raw', digest, 'AES-GCM', false, ['encrypt', 'decrypt']);
+}
+
+async function fingerprintSecret(value: string): Promise<string> {
+  const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(value));
+  return `sha256:${bytesToBase64(new Uint8Array(digest))
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_')
+    .replace(/=+$/g, '')
+    .slice(0, 12)}`;
+}
+
+function exactArrayBuffer(bytes: Uint8Array): ArrayBuffer {
+  const copy = new Uint8Array(bytes.byteLength);
+  copy.set(bytes);
+  return copy.buffer;
+}
+
+function bytesToBase64(bytes: Uint8Array): string {
+  let value = '';
+  for (const byte of bytes) value += String.fromCharCode(byte);
+  return btoa(value);
+}
+
+function base64ToBytes(value: string): Uint8Array {
+  return Uint8Array.from(atob(value), (character) => character.charCodeAt(0));
+}
+
+function isMissingRelationError(error: { code?: string; message?: string }): boolean {
+  return error.code === '42P01' || /relation .* does not exist/i.test(error.message ?? '');
+}
+
+function hasValue(value: string | undefined): value is string {
+  return typeof value === 'string' && value.trim().length > 0;
 }
 
 function bearerToken(request: Request): string | null {

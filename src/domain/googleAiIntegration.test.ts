@@ -3,6 +3,7 @@ import {
   buildGoogleAiIntegrationStatusCopy,
   googleAiIntegrationContract,
   missingGoogleAiIntegrationConfig,
+  normalizeGeminiApiKey,
   normalizeGoogleAiModelId,
   type GoogleAiIntegrationStatus,
 } from './googleAiIntegration';
@@ -11,6 +12,8 @@ const baseStatus: GoogleAiIntegrationStatus = {
   configured: true,
   connected: true,
   missingConfig: [],
+  apiKeySource: 'admin-managed',
+  keyFingerprint: 'sha256:example',
   modelId: 'gemini-2.5-flash',
   connectedAt: null,
   lastValidatedAt: null,
@@ -23,9 +26,23 @@ describe('Google AI integration contract', () => {
     expect(() => normalizeGoogleAiModelId('claude-4')).toThrow(/Gemini/);
   });
 
-  it('reports missing server-side Gemini API key config', () => {
+  it('reports missing server-side Gemini API key or key-storage config', () => {
     expect(missingGoogleAiIntegrationConfig({ GEMINI_API_KEY: '' })).toEqual(['GEMINI_API_KEY']);
+    expect(
+      missingGoogleAiIntegrationConfig({ INTEGRATION_SECRET_ENCRYPTION_KEY: '' }, true),
+    ).toEqual(['INTEGRATION_SECRET_ENCRYPTION_KEY']);
     expect(missingGoogleAiIntegrationConfig({ GEMINI_API_KEY: 'secret-key' })).toEqual([]);
+    expect(
+      missingGoogleAiIntegrationConfig({ INTEGRATION_SECRET_ENCRYPTION_KEY: 'secret-key' }, true),
+    ).toEqual([]);
+  });
+
+  it('normalizes Gemini API keys without allowing whitespace or blanks', () => {
+    expect(normalizeGeminiApiKey('  gemini_test_key_value_12345  ')).toBe(
+      'gemini_test_key_value_12345',
+    );
+    expect(() => normalizeGeminiApiKey('short')).toThrow(/Gemini API key/);
+    expect(() => normalizeGeminiApiKey('AIza Sy Example Key')).toThrow(/Gemini API key/);
   });
 
   it('summarizes configured and missing configuration states', () => {
@@ -33,7 +50,7 @@ describe('Google AI integration contract', () => {
       googleAiIntegrationContract.configuredCopy,
     );
     expect(buildGoogleAiIntegrationStatusCopy({ ...baseStatus, configured: false })).toBe(
-      googleAiIntegrationContract.missingConfigCopy,
+      googleAiIntegrationContract.disconnectedCopy,
     );
   });
 });

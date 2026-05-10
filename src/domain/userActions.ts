@@ -271,6 +271,42 @@ export const actionCapabilities = {
       required: ['bdd', 'static-ui', 'rendered-ui'],
     },
   },
+  saveGoogleAiApiKey: {
+    id: 'save-google-ai-api-key',
+    label: 'Save Google AI API key',
+    kind: 'mutation',
+    actor: 'admin',
+    surface: '/admin/integrations',
+    risk: 'high',
+    auth: 'admin',
+    boundary: 'POST /api/admin/integrations/google-ai/api-key',
+    workflow: null,
+    verification: {
+      required: ['bdd', 'unit', 'static-ui', 'rendered-ui', 'contract'],
+      mbtExempt: {
+        reason:
+          'Provider credential setup is a bounded integration configuration change, not an app-domain state machine.',
+      },
+    },
+  },
+  removeGoogleAiApiKey: {
+    id: 'remove-google-ai-api-key',
+    label: 'Remove Google AI API key',
+    kind: 'mutation',
+    actor: 'admin',
+    surface: '/admin/integrations',
+    risk: 'high',
+    auth: 'admin',
+    boundary: 'POST /api/admin/integrations/google-ai/api-key/remove',
+    workflow: null,
+    verification: {
+      required: ['bdd', 'unit', 'static-ui', 'rendered-ui', 'contract'],
+      mbtExempt: {
+        reason:
+          'Provider credential removal is a bounded integration configuration change, not an app-domain state machine.',
+      },
+    },
+  },
 } as const satisfies Record<string, ActionCapability>;
 
 export type UserActionKey = keyof typeof actionCapabilities;
@@ -530,7 +566,11 @@ export const productCapabilities = {
     label: 'Admin integrations',
     tag: '@capability.admin-integrations',
     cucumberFeatures: ['features/admin-integrations.feature'],
-    requiredActions: [userActions.navigateAdminIntegrations],
+    requiredActions: [
+      userActions.navigateAdminIntegrations,
+      userActions.saveGoogleAiApiKey,
+      userActions.removeGoogleAiApiKey,
+    ],
     workflows: [],
   },
   memberEvents: {

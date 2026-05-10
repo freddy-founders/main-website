@@ -227,6 +227,47 @@ export type Database = {
         };
         Relationships: [];
       };
+      integration_secrets: {
+        Row: {
+          configured_at: string;
+          configured_by_profile_id: string | null;
+          encrypted_secret: string;
+          last_validated_at: string | null;
+          model_id: string;
+          provider: string;
+          secret_fingerprint: string;
+          updated_at: string;
+        };
+        Insert: {
+          configured_at?: string;
+          configured_by_profile_id?: string | null;
+          encrypted_secret: string;
+          last_validated_at?: string | null;
+          model_id?: string;
+          provider: string;
+          secret_fingerprint: string;
+          updated_at?: string;
+        };
+        Update: {
+          configured_at?: string;
+          configured_by_profile_id?: string | null;
+          encrypted_secret?: string;
+          last_validated_at?: string | null;
+          model_id?: string;
+          provider?: string;
+          secret_fingerprint?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'integration_secrets_configured_by_profile_id_fkey';
+            columns: ['configured_by_profile_id'];
+            isOneToOne: false;
+            referencedRelation: 'profiles';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
       people: {
         Row: {
           company_id: string | null;

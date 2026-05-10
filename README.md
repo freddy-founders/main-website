@@ -127,15 +127,19 @@ pnpm exec wrangler secret put SUPABASE_SERVICE_ROLE_KEY
 
 This secret is used only by the Cloudflare Worker admin API for approval/archive/deactivation and must never be exposed to the browser.
 
-Application intake is also server-enforced: the Worker must successfully fetch/scrape the submitted company website and pass a business-evidence gate before creating a pending application. By default this uses credentialless deterministic evidence. When `GEMINI_API_KEY` is configured, the Worker calls the official Gemini API with Google Search grounding for server-side company validation/enrichment.
+Application intake is also server-enforced: the Worker must successfully fetch/scrape the submitted company website and pass a business-evidence gate before creating a pending application. By default this uses credentialless deterministic evidence. When a Gemini key is configured, the Worker calls the official Gemini API with Google Search grounding for server-side company validation/enrichment.
 
-Google AI API key mode needs one server-only Cloudflare secret:
+Google AI API key mode supports two server-side credential sources:
 
 ```bash
+# optional one-shot Worker secret path
 pnpm exec wrangler secret put GEMINI_API_KEY
+
+# required before admins can save/replace keys from /admin/integrations
+pnpm exec wrangler secret put INTEGRATION_SECRET_ENCRYPTION_KEY
 ```
 
-`GEMINI_MODEL` is a non-secret Worker var in `wrangler.jsonc` and defaults to `gemini-2.5-flash`.
+`/admin/integrations` lets admins paste a Gemini API key. The Worker encrypts it with `INTEGRATION_SECRET_ENCRYPTION_KEY`, stores only the encrypted value and fingerprint in Supabase, and never renders the key back to the browser. `GEMINI_MODEL` is a non-secret Worker var in `wrangler.jsonc` and defaults to `gemini-2.5-flash`.
 
 Terraform local setup:
 

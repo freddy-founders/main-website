@@ -473,18 +473,23 @@ Rationale: production must not drift ahead of git history. `main` should be able
 Freddy Founders uses the Google AI Studio / Gemini API key model for optional company website validation/enrichment. The credential model is:
 
 ```text
-Cloudflare Worker secret GEMINI_API_KEY
+Admin enters Gemini API key at /admin/integrations
+  -> Worker encrypts key with INTEGRATION_SECRET_ENCRYPTION_KEY
+  -> Worker stores encrypted key + fingerprint in Supabase
   -> Worker calls official Gemini API generateContent
   -> Gemini uses Google Search grounding server-side
-  -> browser never receives the API key
+  -> browser never receives or re-reads the API key
 ```
 
-The app must not copy OMP's Cloud Code Assist `v1internal` path. Freddy uses the official Gemini API only. If `GEMINI_API_KEY` is not configured, application intake keeps using the deterministic website-evidence gate. If `GEMINI_API_KEY` is configured, company website validation/enrichment is performed server-side through Gemini Google Search grounding.
+A direct Cloudflare Worker secret `GEMINI_API_KEY` remains supported as an optional one-shot/operator path. If no Gemini key is configured, application intake keeps using the deterministic website-evidence gate. If a Gemini key is configured, company website validation/enrichment is performed server-side through Gemini Google Search grounding.
+
+The app must not copy OMP's Cloud Code Assist `v1internal` path. Freddy uses the official Gemini API only.
 
 Required secret material stays outside git:
 
-- `GEMINI_API_KEY`
+- `INTEGRATION_SECRET_ENCRYPTION_KEY` for admin-managed key storage
+- optional `GEMINI_API_KEY` for direct Worker-secret configuration
 
 `GEMINI_MODEL` is a non-secret Worker var and defaults to `gemini-2.5-flash`.
 
-Rationale: this keeps v0 setup lightweight and free-tier friendly, avoids OAuth client/redirect/refresh-token ceremony, keeps the key out of the browser, and still avoids depending on agent-side OMP credentials.
+Rationale: this keeps v0 setup lightweight and free-tier friendly, avoids OAuth client/redirect/refresh-token ceremony, allows admin UI key entry without giving the app a broad Cloudflare API token, keeps the Gemini key out of the browser, and still avoids depending on agent-side OMP credentials.

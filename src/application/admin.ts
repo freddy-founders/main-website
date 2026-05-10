@@ -1,6 +1,9 @@
 import { applicationServices } from './container';
 import { getCurrentSession } from './auth';
-import type { GoogleAiIntegrationStatus } from '../domain/googleAiIntegration';
+import type {
+  GoogleAiIntegrationStatus,
+  SaveGoogleAiApiKeyInput,
+} from '../domain/googleAiIntegration';
 export { canAccessAdmin } from '../domain/accounts';
 
 export type TemporaryPasswordResponse = {
@@ -35,6 +38,21 @@ export async function resetProfilePassword(profileId: string): Promise<Temporary
 
 export async function getGoogleAiIntegrationStatus(): Promise<GoogleAiIntegrationStatus> {
   return adminApiGet<GoogleAiIntegrationStatus>('/api/admin/integrations/google-ai');
+}
+
+export async function saveGoogleAiApiKey(
+  input: SaveGoogleAiApiKeyInput,
+): Promise<GoogleAiIntegrationStatus> {
+  return adminApiPost<GoogleAiIntegrationStatus>(
+    '/api/admin/integrations/google-ai/api-key',
+    input,
+  );
+}
+
+export async function removeGoogleAiApiKey(): Promise<GoogleAiIntegrationStatus> {
+  return adminApiPost<GoogleAiIntegrationStatus>(
+    '/api/admin/integrations/google-ai/api-key/remove',
+  );
 }
 
 async function adminApiPost<T = void>(path: string, body?: unknown): Promise<T> {
