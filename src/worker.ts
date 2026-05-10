@@ -12,13 +12,8 @@ import {
   type CompanyWebsiteMetadata,
 } from './domain/websiteMetadata';
 import {
-  defaultGoogleAiLocation,
-  defaultGoogleAiModel,
-  googleAiIntegrationProvider,
   missingGoogleAiIntegrationConfig,
   normalizeGoogleAiModelId,
-  normalizeGoogleCloudLocation,
-  normalizeGoogleCloudProjectId,
 } from './domain/googleAiIntegration';
 type AssetsBinding = {
   fetch(request: Request): Promise<Response>;
@@ -29,11 +24,8 @@ type WorkerEnv = {
   SUPABASE_URL: string;
   SUPABASE_SERVICE_ROLE_KEY?: string;
   APP_ORIGIN?: string;
-  GOOGLE_OAUTH_CLIENT_ID?: string;
-  GOOGLE_OAUTH_CLIENT_SECRET?: string;
-  INTEGRATION_TOKEN_ENCRYPTION_KEY?: string;
-  GOOGLE_VERTEX_LOCATION?: string;
-  GOOGLE_VERTEX_MODEL_ID?: string;
+  GEMINI_API_KEY?: string;
+  GEMINI_MODEL?: string;
 };
 
 type AdminProfile = {
@@ -46,8 +38,6 @@ type AdminProfile = {
 
 type RegistrationRequestRow = Database['public']['Tables']['registration_requests']['Row'];
 type ProfileRow = Database['public']['Tables']['profiles']['Row'];
-type IntegrationConnectionRow = Database['public']['Tables']['integration_connections']['Row'];
-type IntegrationOAuthStateRow = Database['public']['Tables']['integration_oauth_states']['Row'];
 
 type ApiHandler = (
   request: Request,
@@ -70,15 +60,7 @@ const jsonHeaders = {
   'content-type': 'application/json; charset=utf-8',
 };
 
-const googleOAuthScopes = [
-  'https://www.googleapis.com/auth/cloud-platform',
-  'https://www.googleapis.com/auth/userinfo.email',
-  'https://www.googleapis.com/auth/userinfo.profile',
-];
-
-const googleOAuthAuthorizeUrl = 'https://accounts.google.com/o/oauth2/v2/auth';
-const googleOAuthTokenUrl = 'https://oauth2.googleapis.com/token';
-const googleUserInfoUrl = 'https://www.googleapis.com/oauth2/v1/userinfo?alt=json';
+const geminiGenerateContentBaseUrl = 'https://generativelanguage.googleapis.com/v1beta/models';
 
 function generateTemporaryPassword(): string {
   const alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789';
@@ -140,24 +122,12 @@ function matchPublicApiRoute(method: string, pathname: string): PublicApiHandler
     return submitRegistrationRequest;
   }
 
-  if (method === 'GET' && pathname === '/api/admin/integrations/google-ai/oauth/callback') {
-    return completeGoogleAiOAuth;
-  }
-
   return null;
 }
 
 function matchApiRoute(method: string, pathname: string): ApiHandler | null {
   if (method === 'GET' && pathname === '/api/admin/integrations/google-ai') {
     return getGoogleAiIntegrationStatus;
-  }
-
-  if (method === 'POST' && pathname === '/api/admin/integrations/google-ai/oauth/start') {
-    return startGoogleAiOAuth;
-  }
-
-  if (method === 'POST' && pathname === '/api/admin/integrations/google-ai/disconnect') {
-    return disconnectGoogleAiIntegration;
   }
 
   if (method !== 'POST') return null;
@@ -197,12 +167,7 @@ async function submitRegistrationRequest(
     return json({ error: 'Could not read company website. Check the URL and try again.' }, 422);
   }
 
-  const validation = await validateBusinessWebsite(
-    input.companyWebsiteUrl,
-    scrape.metadata,
-    env,
-    adminClient,
-  );
+  const validation = await validateBusinessWebsite(input.companyWebsiteUrl, scrape.metadata, env);
   if (!validation.ok) {
     return json({ error: 'Could not validate company website as an active business.' }, 422);
   }
@@ -286,13 +251,11 @@ async function validateBusinessWebsite(
   companyWebsiteUrl: string,
   metadata: CompanyWebsiteMetadata,
   env: WorkerEnv,
-  adminClient: SupabaseClient<Database>,
 ): Promise<BusinessValidationResult> {
   const googleAiValidation = await validateBusinessWebsiteWithGoogleAi(
     companyWebsiteUrl,
     metadata,
     env,
-    adminClient,
   );
 
   if (googleAiValidation) {
@@ -306,25 +269,16 @@ async function validateBusinessWebsiteWithGoogleAi(
   companyWebsiteUrl: string,
   metadata: CompanyWebsiteMetadata,
   env: WorkerEnv,
-  adminClient: SupabaseClient<Database>,
 ): Promise<BusinessValidationResult | null> {
-  const connection = await getConnectedGoogleAiConnection(adminClient);
-  if (!connection) return null;
-
   const missingConfig = missingGoogleAiIntegrationConfig(env);
   if (missingConfig.length > 0) {
-    return { ok: false, reason: `Google AI integration is missing ${missingConfig.join(', ')}.` };
+    return null;
   }
 
   try {
-    const refreshToken = await decryptIntegrationToken(
-      connection.encrypted_refresh_token,
-      env.INTEGRATION_TOKEN_ENCRYPTION_KEY ?? '',
-    );
-    const accessToken = await refreshGoogleAccessToken(env, refreshToken);
-    const responseText = await callVertexGoogleSearchValidation(
-      accessToken,
-      connection,
+    const responseText = await callGeminiGoogleSearchValidation(
+      env.GEMINI_API_KEY ?? '',
+      normalizeGoogleAiModelId(env.GEMINI_MODEL),
       companyWebsiteUrl,
       metadata,
     );
@@ -336,11 +290,6 @@ async function validateBusinessWebsiteWithGoogleAi(
         reason: parsed.reason || 'Google AI could not validate the website as an active business.',
       };
     }
-
-    await adminClient
-      .from('integration_connections')
-      .update({ last_validated_at: new Date().toISOString(), updated_at: new Date().toISOString() })
-      .eq('id', connection.id);
 
     return {
       ok: true,
@@ -354,32 +303,29 @@ async function validateBusinessWebsiteWithGoogleAi(
   }
 }
 
-async function callVertexGoogleSearchValidation(
-  accessToken: string,
-  connection: IntegrationConnectionRow,
+async function callGeminiGoogleSearchValidation(
+  apiKey: string,
+  modelId: string,
   companyWebsiteUrl: string,
   metadata: CompanyWebsiteMetadata,
 ): Promise<string> {
-  const location = connection.google_cloud_location || defaultGoogleAiLocation;
-  const modelId = connection.model_id || defaultGoogleAiModel;
-  const host =
-    location === 'global' ? 'aiplatform.googleapis.com' : `${location}-aiplatform.googleapis.com`;
-  const endpoint = `https://${host}/v1/projects/${connection.google_cloud_project_id}/locations/${location}/publishers/google/models/${modelId}:generateContent`;
+  const endpoint = `${geminiGenerateContentBaseUrl}/${encodeURIComponent(modelId)}:generateContent`;
   const prompt = [
     'Validate whether this submitted website is an active business website for a private founder community application.',
-    'Return JSON only with this shape: {\"isActiveBusiness\": boolean, \"companyName\": string | null, \"confidence\": \"medium\" | \"high\", \"reason\": string}.',
+    'Use Google Search grounding when useful, but prioritize whether the submitted URL and scraped metadata describe a real operating company.',
+    'Return JSON only with this shape: {"isActiveBusiness": boolean, "companyName": string | null, "confidence": "medium" | "high", "reason": string}.',
     `Submitted URL: ${companyWebsiteUrl}`,
     `Scraped source URL: ${metadata.sourceUrl}`,
     `Scraped company name: ${metadata.companyName}`,
     `Page title: ${metadata.title ?? ''}`,
     `Description: ${metadata.description ?? ''}`,
-  ].join('\\n');
+  ].join('\n');
 
   const response = await fetch(endpoint, {
     method: 'POST',
     headers: {
-      authorization: `Bearer ${accessToken}`,
       'content-type': 'application/json; charset=utf-8',
+      'x-goog-api-key': apiKey,
     },
     body: JSON.stringify({
       contents: [
@@ -388,8 +334,10 @@ async function callVertexGoogleSearchValidation(
           parts: [{ text: prompt }],
         },
       ],
-      tools: [{ googleSearch: {} }],
-      model: `projects/${connection.google_cloud_project_id}/locations/${location}/publishers/google/models/${modelId}`,
+      generationConfig: {
+        responseMimeType: 'application/json',
+      },
+      tools: [{ google_search: {} }],
     }),
   });
 
@@ -474,186 +422,20 @@ async function getGoogleAiIntegrationStatus(
   _request: Request,
   env: WorkerEnv,
   _url: URL,
-  adminClient: SupabaseClient<Database>,
+  _adminClient: SupabaseClient<Database>,
   _actor: AdminProfile,
 ): Promise<Response> {
   const missingConfig = missingGoogleAiIntegrationConfig(env);
-  const connection = await getConnectedGoogleAiConnection(adminClient);
+  const configured = missingConfig.length === 0;
 
   return json({
-    configured: missingConfig.length === 0,
-    connected: Boolean(connection),
+    configured,
+    connected: configured,
     missingConfig,
-    googleAccountEmail: connection?.google_account_email ?? null,
-    googleCloudProjectId: connection?.google_cloud_project_id ?? null,
-    googleCloudLocation:
-      connection?.google_cloud_location ?? normalizeGoogleCloudLocation(env.GOOGLE_VERTEX_LOCATION),
-    modelId: connection?.model_id ?? normalizeGoogleAiModelId(env.GOOGLE_VERTEX_MODEL_ID),
-    connectedAt: connection?.connected_at ?? null,
-    lastValidatedAt: connection?.last_validated_at ?? null,
+    modelId: normalizeGoogleAiModelId(env.GEMINI_MODEL),
+    connectedAt: null,
+    lastValidatedAt: null,
   });
-}
-
-async function startGoogleAiOAuth(
-  request: Request,
-  env: WorkerEnv,
-  _url: URL,
-  adminClient: SupabaseClient<Database>,
-  actor: AdminProfile,
-): Promise<Response> {
-  const missingConfig = missingGoogleAiIntegrationConfig(env);
-  if (missingConfig.length > 0) {
-    return json({ error: `Google AI integration is missing ${missingConfig.join(', ')}.` }, 503);
-  }
-
-  const input = (await request.json().catch(() => null)) as {
-    googleCloudProjectId?: unknown;
-    googleCloudLocation?: unknown;
-    modelId?: unknown;
-  } | null;
-  let googleCloudProjectId: string;
-  let googleCloudLocation: string;
-  let modelId: string;
-  try {
-    googleCloudProjectId = normalizeGoogleCloudProjectId(
-      typeof input?.googleCloudProjectId === 'string' ? input.googleCloudProjectId : '',
-    );
-    googleCloudLocation = normalizeGoogleCloudLocation(
-      typeof input?.googleCloudLocation === 'string' && input.googleCloudLocation.trim()
-        ? input.googleCloudLocation
-        : env.GOOGLE_VERTEX_LOCATION,
-    );
-    modelId = normalizeGoogleAiModelId(
-      typeof input?.modelId === 'string' && input.modelId.trim()
-        ? input.modelId
-        : env.GOOGLE_VERTEX_MODEL_ID,
-    );
-  } catch (error) {
-    return json(
-      { error: error instanceof Error ? error.message : 'Invalid Google AI setup.' },
-      400,
-    );
-  }
-  const state = randomUrlSafeToken();
-  const expiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString();
-
-  const { error } = await adminClient.from('integration_oauth_states').insert({
-    state,
-    provider: googleAiIntegrationProvider,
-    actor_profile_id: actor.id,
-    google_cloud_project_id: googleCloudProjectId,
-    google_cloud_location: googleCloudLocation,
-    model_id: modelId,
-    expires_at: expiresAt,
-  });
-
-  if (error) throw error;
-
-  return json({
-    authorizationUrl: buildGoogleAuthorizationUrl(env, state),
-  });
-}
-
-async function completeGoogleAiOAuth(
-  _request: Request,
-  env: WorkerEnv,
-  url: URL,
-  adminClient: SupabaseClient<Database>,
-): Promise<Response> {
-  const redirectBase = `${appOrigin(env)}/admin/integrations`;
-  const error = url.searchParams.get('error');
-  const state = url.searchParams.get('state') ?? '';
-  const code = url.searchParams.get('code') ?? '';
-
-  if (error) {
-    return redirect(`${redirectBase}?google_ai=denied`);
-  }
-
-  if (!state || !code) {
-    return redirect(`${redirectBase}?google_ai=invalid`);
-  }
-
-  const oauthState = await getPendingGoogleAiOAuthState(adminClient, state);
-  if (!oauthState) {
-    return redirect(`${redirectBase}?google_ai=expired`);
-  }
-
-  try {
-    const token = await exchangeGoogleAuthorizationCode(env, code);
-    if (!token.refresh_token) {
-      return redirect(`${redirectBase}?google_ai=missing_refresh_token`);
-    }
-
-    const userInfo = await getGoogleUserInfo(token.access_token);
-    const encryptedRefreshToken = await encryptIntegrationToken(
-      token.refresh_token,
-      env.INTEGRATION_TOKEN_ENCRYPTION_KEY ?? '',
-    );
-    const now = new Date().toISOString();
-
-    await adminClient
-      .from('integration_connections')
-      .update({ status: 'disconnected', disconnected_at: now, updated_at: now })
-      .eq('provider', googleAiIntegrationProvider)
-      .eq('status', 'connected');
-
-    const { error: insertError } = await adminClient.from('integration_connections').insert({
-      provider: googleAiIntegrationProvider,
-      status: 'connected',
-      connected_by_profile_id: oauthState.actor_profile_id,
-      google_account_email: userInfo.email,
-      google_cloud_project_id: oauthState.google_cloud_project_id,
-      google_cloud_location: oauthState.google_cloud_location,
-      model_id: oauthState.model_id,
-      encrypted_refresh_token: encryptedRefreshToken,
-      scopes: token.scope?.split(/\\s+/).filter(Boolean) ?? googleOAuthScopes,
-      connected_at: now,
-      updated_at: now,
-    });
-
-    if (insertError) throw insertError;
-
-    await markGoogleAiOAuthStateConsumed(adminClient, state);
-    await insertIntegrationAudit(adminClient, oauthState.actor_profile_id, {
-      action: 'connect google ai integration',
-      targetEmail: userInfo.email,
-      metadata: {
-        provider: googleAiIntegrationProvider,
-        googleCloudProjectId: oauthState.google_cloud_project_id,
-        googleCloudLocation: oauthState.google_cloud_location,
-        modelId: oauthState.model_id,
-      },
-    });
-
-    return redirect(`${redirectBase}?google_ai=connected`);
-  } catch {
-    return redirect(`${redirectBase}?google_ai=failed`);
-  }
-}
-
-async function disconnectGoogleAiIntegration(
-  _request: Request,
-  _env: WorkerEnv,
-  _url: URL,
-  adminClient: SupabaseClient<Database>,
-  actor: AdminProfile,
-): Promise<Response> {
-  const now = new Date().toISOString();
-  const { error } = await adminClient
-    .from('integration_connections')
-    .update({ status: 'disconnected', disconnected_at: now, updated_at: now })
-    .eq('provider', googleAiIntegrationProvider)
-    .eq('status', 'connected');
-
-  if (error) throw error;
-
-  await insertIntegrationAudit(adminClient, actor.id, {
-    action: 'disconnect google ai integration',
-    targetEmail: actor.email,
-    metadata: { provider: googleAiIntegrationProvider },
-  });
-
-  return json({ ok: true });
 }
 
 async function approveRegistrationRequest(
@@ -967,238 +749,6 @@ async function insertAccessAudit(
   });
 
   if (error) throw error;
-}
-
-async function getConnectedGoogleAiConnection(
-  adminClient: SupabaseClient<Database>,
-): Promise<IntegrationConnectionRow | null> {
-  const { data, error } = await adminClient
-    .from('integration_connections')
-    .select('*')
-    .eq('provider', googleAiIntegrationProvider)
-    .eq('status', 'connected')
-    .maybeSingle();
-
-  if (error) {
-    if (isMissingRelationError(error)) return null;
-    throw error;
-  }
-
-  return data;
-}
-
-async function getPendingGoogleAiOAuthState(
-  adminClient: SupabaseClient<Database>,
-  state: string,
-): Promise<IntegrationOAuthStateRow | null> {
-  const { data, error } = await adminClient
-    .from('integration_oauth_states')
-    .select('*')
-    .eq('state', state)
-    .eq('provider', googleAiIntegrationProvider)
-    .is('consumed_at', null)
-    .gt('expires_at', new Date().toISOString())
-    .maybeSingle();
-
-  if (error) {
-    if (isMissingRelationError(error)) return null;
-    throw error;
-  }
-
-  return data;
-}
-
-async function markGoogleAiOAuthStateConsumed(
-  adminClient: SupabaseClient<Database>,
-  state: string,
-): Promise<void> {
-  const { error } = await adminClient
-    .from('integration_oauth_states')
-    .update({ consumed_at: new Date().toISOString() })
-    .eq('state', state);
-
-  if (error) throw error;
-}
-
-async function insertIntegrationAudit(
-  adminClient: SupabaseClient<Database>,
-  actorProfileId: string | null,
-  input: {
-    action: string;
-    targetEmail: string;
-    metadata?: Record<string, unknown>;
-  },
-): Promise<void> {
-  const { error } = await adminClient.from('access_audit').insert({
-    actor_profile_id: actorProfileId,
-    target_profile_id: null,
-    target_email: input.targetEmail,
-    action: input.action,
-    metadata: (input.metadata ?? {}) as Json,
-  });
-
-  if (error) throw error;
-}
-
-type GoogleOAuthTokenResponse = {
-  access_token?: string;
-  refresh_token?: string;
-  expires_in?: number;
-  scope?: string;
-  error?: string;
-  error_description?: string;
-};
-
-async function exchangeGoogleAuthorizationCode(
-  env: WorkerEnv,
-  code: string,
-): Promise<GoogleOAuthTokenResponse & { access_token: string }> {
-  const response = await fetch(googleOAuthTokenUrl, {
-    method: 'POST',
-    headers: { 'content-type': 'application/x-www-form-urlencoded' },
-    body: new URLSearchParams({
-      client_id: env.GOOGLE_OAUTH_CLIENT_ID ?? '',
-      client_secret: env.GOOGLE_OAUTH_CLIENT_SECRET ?? '',
-      code,
-      grant_type: 'authorization_code',
-      redirect_uri: googleOAuthRedirectUri(env),
-    }),
-  });
-
-  const payload = (await response.json()) as GoogleOAuthTokenResponse;
-  if (!response.ok || !payload.access_token) {
-    throw new Error(
-      payload.error_description ?? payload.error ?? 'Google OAuth token exchange failed.',
-    );
-  }
-
-  return { ...payload, access_token: payload.access_token };
-}
-
-async function refreshGoogleAccessToken(env: WorkerEnv, refreshToken: string): Promise<string> {
-  const response = await fetch(googleOAuthTokenUrl, {
-    method: 'POST',
-    headers: { 'content-type': 'application/x-www-form-urlencoded' },
-    body: new URLSearchParams({
-      client_id: env.GOOGLE_OAUTH_CLIENT_ID ?? '',
-      client_secret: env.GOOGLE_OAUTH_CLIENT_SECRET ?? '',
-      refresh_token: refreshToken,
-      grant_type: 'refresh_token',
-    }),
-  });
-
-  const payload = (await response.json()) as GoogleOAuthTokenResponse;
-  if (!response.ok || !payload.access_token) {
-    throw new Error(
-      payload.error_description ?? payload.error ?? 'Google OAuth token refresh failed.',
-    );
-  }
-
-  return payload.access_token;
-}
-
-async function getGoogleUserInfo(accessToken: string): Promise<{ email: string }> {
-  const response = await fetch(googleUserInfoUrl, {
-    headers: { authorization: `Bearer ${accessToken}` },
-  });
-
-  const payload = (await response.json()) as { email?: string };
-  if (!response.ok || !payload.email) {
-    throw new Error('Google OAuth userinfo lookup failed.');
-  }
-
-  return { email: payload.email };
-}
-
-function buildGoogleAuthorizationUrl(env: WorkerEnv, state: string): string {
-  const url = new URL(googleOAuthAuthorizeUrl);
-  url.searchParams.set('client_id', env.GOOGLE_OAUTH_CLIENT_ID ?? '');
-  url.searchParams.set('redirect_uri', googleOAuthRedirectUri(env));
-  url.searchParams.set('response_type', 'code');
-  url.searchParams.set('scope', googleOAuthScopes.join(' '));
-  url.searchParams.set('state', state);
-  url.searchParams.set('access_type', 'offline');
-  url.searchParams.set('prompt', 'consent');
-  url.searchParams.set('include_granted_scopes', 'true');
-  return url.toString();
-}
-
-function googleOAuthRedirectUri(env: WorkerEnv): string {
-  return `${appOrigin(env)}/api/admin/integrations/google-ai/oauth/callback`;
-}
-
-function appOrigin(env: WorkerEnv): string {
-  return env.APP_ORIGIN ?? 'https://freddyfounders.com';
-}
-
-async function encryptIntegrationToken(value: string, secret: string): Promise<string> {
-  const iv = crypto.getRandomValues(new Uint8Array(12));
-  const key = await integrationEncryptionKey(secret);
-  const encrypted = await crypto.subtle.encrypt(
-    { name: 'AES-GCM', iv },
-    key,
-    new TextEncoder().encode(value),
-  );
-  return `v1.${bytesToBase64(iv)}.${bytesToBase64(new Uint8Array(encrypted))}`;
-}
-
-async function decryptIntegrationToken(value: string, secret: string): Promise<string> {
-  const [version, ivBase64, encryptedBase64] = value.split('.');
-  if (version !== 'v1' || !ivBase64 || !encryptedBase64) {
-    throw new Error('Integration token is not readable.');
-  }
-
-  const key = await integrationEncryptionKey(secret);
-  const iv = base64ToBytes(ivBase64);
-  const encryptedBytes = base64ToBytes(encryptedBase64);
-  const decrypted = await crypto.subtle.decrypt(
-    { name: 'AES-GCM', iv: exactArrayBuffer(iv) },
-    key,
-    exactArrayBuffer(encryptedBytes),
-  );
-  return new TextDecoder().decode(decrypted);
-}
-
-async function integrationEncryptionKey(secret: string): Promise<CryptoKey> {
-  if (!secret.trim()) {
-    throw new Error('Integration encryption key is not configured.');
-  }
-
-  const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(secret));
-  return crypto.subtle.importKey('raw', digest, 'AES-GCM', false, ['encrypt', 'decrypt']);
-}
-
-function exactArrayBuffer(bytes: Uint8Array): ArrayBuffer {
-  const copy = new Uint8Array(bytes.byteLength);
-  copy.set(bytes);
-  return copy.buffer;
-}
-
-function randomUrlSafeToken(): string {
-  const bytes = new Uint8Array(32);
-  crypto.getRandomValues(bytes);
-  return bytesToBase64(bytes).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, '');
-}
-
-function bytesToBase64(bytes: Uint8Array): string {
-  let value = '';
-  for (const byte of bytes) value += String.fromCharCode(byte);
-  return btoa(value);
-}
-
-function base64ToBytes(value: string): Uint8Array {
-  return Uint8Array.from(atob(value), (character) => character.charCodeAt(0));
-}
-
-function isMissingRelationError(error: { code?: string; message?: string }): boolean {
-  return error.code === '42P01' || /relation .* does not exist/i.test(error.message ?? '');
-}
-
-function redirect(location: string): Response {
-  return new Response(null, {
-    status: 302,
-    headers: { location },
-  });
 }
 
 function bearerToken(request: Request): string | null {

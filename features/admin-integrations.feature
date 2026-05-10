@@ -1,16 +1,14 @@
 @capability.admin-integrations
 Feature: Admin integrations
-  Admins can connect app-owned provider integrations for server-side company intelligence.
+  Admins can inspect server-owned provider configuration for company intelligence.
 
-  @action.navigate-admin-integrations @action.connect-google-ai-integration
-  Scenario: Admin can start Google AI OAuth setup
-    Given Google AI integration configuration is present
+  @action.navigate-admin-integrations
+  Scenario: Admin can inspect Gemini API key setup
+    Given Google AI API key configuration is present
     When an admin opens the integrations page
-    And the admin starts Google AI OAuth setup for project "freddy-founders-123"
-    Then a Google authorization URL is created
+    Then Google AI validation is enabled through the server key
 
-  @action.disconnect-google-ai-integration
-  Scenario: Admin can disconnect Google AI
-    Given Google AI is connected for project "freddy-founders-123"
-    When the admin disconnects Google AI
-    Then Google AI is no longer connected
+  Scenario: Admin sees deterministic fallback when Gemini API key is missing
+    Given Google AI API key configuration is missing
+    When an admin opens the integrations page
+    Then deterministic website evidence remains the fallback

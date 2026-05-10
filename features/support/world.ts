@@ -20,7 +20,6 @@ export class FreddyWorld extends World {
   memberLoggedIn = false;
   loginRequired = false;
   googleAiIntegrationStatus: GoogleAiIntegrationStatus | null = null;
-  googleAiAuthorizationUrl: string | null = null;
 }
 
 setWorldConstructor(FreddyWorld);

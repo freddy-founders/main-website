@@ -57,7 +57,7 @@ Production auth is approved-profile-only:
 - login never creates a new account
 - deactivated profiles lose private app access and cannot use password login
 
-Admin governance uses cumulative roles: `member < organizer < admin`. The `/admin` page is admin-only, only admins can promote users to admin, organizers can promote members to organizers through the backend role boundary, and ownership is a singleton capability stored separately from the role. The owner must remain an admin; first-owner bootstrap is a manual setup SQL operation once the owner profile exists. `/admin/integrations` is also admin-only and lets admins connect the app-owned Google OAuth client to Vertex AI for server-side company intelligence.
+Admin governance uses cumulative roles: `member < organizer < admin`. The `/admin` page is admin-only, only admins can promote users to admin, organizers can promote members to organizers through the backend role boundary, and ownership is a singleton capability stored separately from the role. The owner must remain an admin; first-owner bootstrap is a manual setup SQL operation once the owner profile exists. `/admin/integrations` is also admin-only and shows whether the server-side Gemini API key model is configured for company intelligence.
 
 ## Development
 
@@ -127,23 +127,15 @@ pnpm exec wrangler secret put SUPABASE_SERVICE_ROLE_KEY
 
 This secret is used only by the Cloudflare Worker admin API for approval/archive/deactivation and must never be exposed to the browser.
 
-Application intake is also server-enforced: the Worker must successfully fetch/scrape the submitted company website and pass a business-evidence gate before creating a pending application. By default this uses credentialless deterministic evidence. When an admin connects Google AI from `/admin/integrations`, the Worker uses the encrypted admin-granted refresh token to call official Vertex AI Gemini Google Search grounding for company validation/enrichment.
+Application intake is also server-enforced: the Worker must successfully fetch/scrape the submitted company website and pass a business-evidence gate before creating a pending application. By default this uses credentialless deterministic evidence. When `GEMINI_API_KEY` is configured, the Worker calls the official Gemini API with Google Search grounding for server-side company validation/enrichment.
 
-Google AI admin integration needs these server-only Cloudflare settings before an admin can connect OAuth:
+Google AI API key mode needs one server-only Cloudflare secret:
 
 ```bash
-pnpm exec wrangler secret put GOOGLE_OAUTH_CLIENT_ID
-pnpm exec wrangler secret put GOOGLE_OAUTH_CLIENT_SECRET
-pnpm exec wrangler secret put INTEGRATION_TOKEN_ENCRYPTION_KEY
+pnpm exec wrangler secret put GEMINI_API_KEY
 ```
 
-The Google OAuth web client must allow this redirect URI:
-
-```text
-https://freddyfounders.com/api/admin/integrations/google-ai/oauth/callback
-```
-
-`GOOGLE_VERTEX_LOCATION` and `GOOGLE_VERTEX_MODEL_ID` are non-secret Worker vars in `wrangler.jsonc`.
+`GEMINI_MODEL` is a non-secret Worker var in `wrangler.jsonc` and defaults to `gemini-2.5-flash`.
 
 Terraform local setup:
 

@@ -468,24 +468,23 @@ Direct `wrangler deploy` from uncommitted local files is prohibited except for a
 
 Rationale: production must not drift ahead of git history. `main` should be able to explain and reproduce what is live.
 
-## 2026-05-10 — Google AI validation uses admin-connected app OAuth
+## 2026-05-10 — Google AI validation uses server-side Gemini API key
 
-Freddy Founders can now connect Google AI from an admin-only `/admin/integrations` surface. The credential model is:
+Freddy Founders uses the Google AI Studio / Gemini API key model for optional company website validation/enrichment. The credential model is:
 
 ```text
-Freddy-owned Google OAuth web client
-  -> admin grants Google OAuth consent
-  -> Worker stores encrypted refresh token in Supabase
-  -> Worker refreshes access tokens server-side
-  -> Worker calls official Vertex AI Gemini Google Search grounding
+Cloudflare Worker secret GEMINI_API_KEY
+  -> Worker calls official Gemini API generateContent
+  -> Gemini uses Google Search grounding server-side
+  -> browser never receives the API key
 ```
 
-The app must not copy OMP's Cloud Code Assist `v1internal` path. Freddy uses official Google OAuth and Vertex AI APIs only. If no Google AI integration is connected, application intake keeps using the deterministic website-evidence gate. If Google AI is connected, company website validation/enrichment is performed server-side through the encrypted admin-granted refresh token.
+The app must not copy OMP's Cloud Code Assist `v1internal` path. Freddy uses the official Gemini API only. If `GEMINI_API_KEY` is not configured, application intake keeps using the deterministic website-evidence gate. If `GEMINI_API_KEY` is configured, company website validation/enrichment is performed server-side through Gemini Google Search grounding.
 
 Required secret material stays outside git:
 
-- `GOOGLE_OAUTH_CLIENT_ID`
-- `GOOGLE_OAUTH_CLIENT_SECRET`
-- `INTEGRATION_TOKEN_ENCRYPTION_KEY`
+- `GEMINI_API_KEY`
 
-Rationale: this keeps provider authorization admin-controlled and revocable without putting a raw Gemini API key in the browser or depending on agent-side OMP credentials.
+`GEMINI_MODEL` is a non-secret Worker var and defaults to `gemini-2.5-flash`.
+
+Rationale: this keeps v0 setup lightweight and free-tier friendly, avoids OAuth client/redirect/refresh-token ceremony, keeps the key out of the browser, and still avoids depending on agent-side OMP credentials.

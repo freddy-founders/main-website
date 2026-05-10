@@ -3,14 +3,12 @@ import { Navigate, Route, Routes, useNavigate } from 'react-router-dom';
 import {
   approveRegistrationRequest,
   archiveRegistrationRequest,
-  disconnectGoogleAiIntegration,
   getGoogleAiIntegrationStatus,
   deactivateProfile,
   listPendingRegistrationRequests,
   listProfiles,
   resetProfilePassword,
   setProfileRole,
-  startGoogleAiIntegration,
 } from './application/admin';
 import { completePasswordReset, getCurrentSession, signInWithPassword } from './application/auth';
 import { listPublicCompanies } from './application/companies';
@@ -54,7 +52,6 @@ import {
 } from './domain/authPages';
 import {
   buildGoogleAiIntegrationStatusCopy,
-  defaultGoogleAiLocation,
   defaultGoogleAiModel,
   googleAiIntegrationContract,
   type GoogleAiIntegrationStatus,
@@ -900,46 +897,10 @@ function AdminPage() {
 function AdminIntegrationsPage() {
   const session = useAsyncValue(getCurrentSession, []);
   const role = session?.role ?? null;
-  const [refreshKey, setRefreshKey] = useState(0);
-  const [actionStatus, setActionStatus] = useState<string | null>(null);
-  const integrationStatus = useAsyncValue<GoogleAiIntegrationStatus>(getGoogleAiIntegrationStatus, [
-    refreshKey,
-  ]);
-  const callbackStatus =
-    typeof window === 'undefined'
-      ? null
-      : new URLSearchParams(window.location.search).get('google_ai');
-
-  async function handleConnect(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const form = new FormData(event.currentTarget);
-    setActionStatus('Starting Google OAuth...');
-
-    try {
-      const result = await startGoogleAiIntegration({
-        googleCloudProjectId: String(form.get('google-cloud-project-id') ?? ''),
-        googleCloudLocation: String(form.get('google-cloud-location') ?? ''),
-        modelId: String(form.get('google-ai-model-id') ?? ''),
-      });
-      if (typeof window !== 'undefined') {
-        window.location.assign(result.authorizationUrl);
-      }
-    } catch (error) {
-      setActionStatus(error instanceof Error ? error.message : 'Could not start Google OAuth.');
-    }
-  }
-
-  async function handleDisconnect() {
-    setActionStatus('Disconnecting Google AI...');
-
-    try {
-      await disconnectGoogleAiIntegration();
-      setActionStatus('Google AI disconnected.');
-      setRefreshKey((value) => value + 1);
-    } catch (error) {
-      setActionStatus(error instanceof Error ? error.message : 'Could not disconnect Google AI.');
-    }
-  }
+  const integrationStatus = useAsyncValue<GoogleAiIntegrationStatus>(
+    getGoogleAiIntegrationStatus,
+    [],
+  );
 
   if (role !== 'admin') {
     return (
@@ -966,14 +927,12 @@ function AdminIntegrationsPage() {
         title={googleAiIntegrationContract.pageTitle}
         eyebrow={googleAiIntegrationContract.pageEyebrow}
       >
-        {callbackStatus ? <Notice>Google AI OAuth result: {callbackStatus}</Notice> : null}
         <Notice>{statusCopy}</Notice>
-        {actionStatus ? <Notice>{actionStatus}</Notice> : null}
         <FieldList
           items={[
-            'Provider / Google Vertex AI / Gemini Google Search grounding',
-            `Connected account / ${integrationStatus?.googleAccountEmail ?? 'Not connected'}`,
-            `Project / ${integrationStatus?.googleCloudProjectId ?? 'Not connected'}`,
+            'Provider / Gemini API key with Google Search grounding',
+            `Server key / ${integrationStatus?.configured ? 'Configured' : 'Missing'}`,
+            `Model / ${integrationStatus?.modelId ?? defaultGoogleAiModel}`,
             `Missing config / ${
               integrationStatus && integrationStatus.missingConfig.length > 0
                 ? integrationStatus.missingConfig.join(', ')
@@ -982,57 +941,24 @@ function AdminIntegrationsPage() {
           ]}
         />
       </Panel>
-      <Panel title={googleAiIntegrationContract.connectTitle} eyebrow="OAuth Setup">
-        <form onSubmit={handleConnect} data-user-action={userActions.connectGoogleAiIntegration}>
-          <FieldGrid>
-            <Field label={googleAiIntegrationContract.projectIdLabel}>
-              <TextInput
-                name="google-cloud-project-id"
-                placeholder="freddy-founders-123"
-                required
-              />
-            </Field>
-            <Field label={googleAiIntegrationContract.locationLabel}>
-              <TextInput
-                name="google-cloud-location"
-                placeholder={integrationStatus?.googleCloudLocation ?? defaultGoogleAiLocation}
-                defaultValue={integrationStatus?.googleCloudLocation ?? defaultGoogleAiLocation}
-                required
-              />
-            </Field>
-            <Field label={googleAiIntegrationContract.modelLabel}>
-              <TextInput
-                name="google-ai-model-id"
-                placeholder={integrationStatus?.modelId ?? defaultGoogleAiModel}
-                defaultValue={integrationStatus?.modelId ?? defaultGoogleAiModel}
-                required
-              />
-            </Field>
-            <Button type="submit" data-user-action={userActions.connectGoogleAiIntegration}>
-              {googleAiIntegrationContract.connectActionLabel}
-            </Button>
-          </FieldGrid>
-        </form>
-      </Panel>
-      <Panel title={googleAiIntegrationContract.disconnectTitle} eyebrow="Provider Control">
+      <Panel title={googleAiIntegrationContract.setupTitle} eyebrow="Server Secret">
         <p>
-          Disconnecting Google AI removes the active provider connection. Existing applications
-          remain unchanged.
+          Set GEMINI_API_KEY as a Cloudflare Worker secret. The browser never receives the key; the
+          Worker calls the official Gemini API server-side during application intake.
         </p>
-        <Button
-          type="button"
-          tone="neutral"
-          data-user-action={userActions.disconnectGoogleAiIntegration}
-          onClick={handleDisconnect}
-        >
-          {googleAiIntegrationContract.disconnectActionLabel}
-        </Button>
+        <FieldList
+          items={[
+            'Secret / pnpm exec wrangler secret put GEMINI_API_KEY',
+            `Optional model / GEMINI_MODEL=${integrationStatus?.modelId ?? defaultGoogleAiModel}`,
+            'Fallback / deterministic website evidence remains active when the key is missing',
+          ]}
+        />
       </Panel>
       <Rail
         title="Credential model"
-        copy="Freddy owns the OAuth client. An admin grants a Google refresh token. The Worker encrypts the token and calls official Vertex AI APIs server-side."
+        copy="Freddy uses one server-side Gemini API key from Google AI Studio. No OAuth client, redirect URI, refresh token, or Supabase integration secret is required."
         stats={[
-          { value: integrationStatus?.connected ? 'YES' : 'NO', label: 'Connected' },
+          { value: integrationStatus?.connected ? 'YES' : 'NO', label: 'Enabled' },
           { value: integrationStatus?.configured ? 'YES' : 'NO', label: 'Configured' },
         ]}
       />
