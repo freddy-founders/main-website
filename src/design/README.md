@@ -39,7 +39,7 @@ foundations -> primitives -> composites -> patterns -> routes/pages
 - `primitives/` — small reusable UI atoms: `Button`, `ButtonLink`, `Tag`, `Meta`, `Notice`, `TextInput`, `TextArea`.
 - `composites/` — composed layout/content units:
   - app frame: `AppChrome`, `Topbar`, `PageShell`
-  - generic content: `Panel`, `Rail`, `RailSection`, `Row`, `RowList`, `TagList`, `Field`, `FieldGrid`
+  - generic content: `Panel`, `Rail`, `RailSection`, `Row`, `RowList`, `TagList`, `Field`, `FieldGrid`, `Autocomplete`
   - operational board grammar: `BoardColumn`, `BoardAside`, `BoardSection`, `ScheduleRow`, `ScheduleMarker`, `SpecPanel`, `StatGrid`, `ChipBar`, `FieldList`
 - `patterns/` — larger reusable product/catalog shapes. Current pattern: `DesignLibraryExample`.
 

@@ -769,6 +769,56 @@
   width: 100%;
 }
 
+.ff-autocomplete {
+  position: relative;
+}
+
+.ff-autocomplete-list {
+  background: var(--semantic-surface-raised);
+  border: var(--ff-border);
+  box-shadow: 4px 4px 0 var(--color-accent);
+  display: grid;
+  left: 0;
+  max-height: 14rem;
+  overflow-y: auto;
+  position: absolute;
+  right: 0;
+  top: calc(100% + var(--space-2xs));
+  z-index: 20;
+}
+
+.ff-autocomplete-option,
+.ff-autocomplete-empty {
+  background: var(--semantic-surface-raised);
+  border: 0;
+  border-bottom: var(--ff-border);
+  color: var(--semantic-text-primary);
+  font-family: var(--font-mono);
+  font-size: var(--size-text-xs);
+  letter-spacing: 0.035em;
+  padding: var(--space-sm);
+  text-align: left;
+}
+
+.ff-autocomplete-option {
+  cursor: pointer;
+}
+
+.ff-autocomplete-option:hover,
+.ff-autocomplete-option:focus {
+  background: var(--color-accent-soft);
+  outline: none;
+}
+
+.ff-autocomplete-option:last-child,
+.ff-autocomplete-empty:last-child {
+  border-bottom: 0;
+}
+
+.ff-autocomplete-empty {
+  color: var(--semantic-text-muted);
+}
+
 .ff-input[type='checkbox'] {
   min-height: 1rem;
   width: 1rem;

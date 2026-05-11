@@ -33,7 +33,7 @@ Then('the founder affirmation copy is {string}', function (copy: string) {
 });
 
 Then(
-  /^the Town\/City search for "([^"]+)" includes "([^"]+)"$/,
+  /^the Town\/City dropdown for "([^"]+)" includes "([^"]+)"$/,
   function (query: string, expectedTownCity: string) {
     assert.ok(filterAtlanticTownCities(query).map(String).includes(expectedTownCity));
   },

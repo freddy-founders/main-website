@@ -19,6 +19,7 @@ import { listPublicPeople } from './application/people';
 import { createRegistrationRequest } from './application/registrationRequests';
 import {
   AuthEntryShell,
+  Autocomplete,
   AppChrome,
   BoardAside,
   BoardColumn,
@@ -46,7 +47,7 @@ import type { ProfileAccount, RegistrationRequest } from './domain/accounts';
 import type { CompanySummary } from './domain/companies';
 import type { EventRegistrationAction, EventSummary } from './domain/events';
 import type { PersonSummary } from './domain/people';
-import { atlanticTownCities, normalizeAtlanticTownCity } from './domain/atlanticTownCities';
+import { filterAtlanticTownCities, normalizeAtlanticTownCity } from './domain/atlanticTownCities';
 import {
   loginPageContract,
   passwordResetPageContract,
@@ -605,9 +606,30 @@ function LoginCallbackPage() {
 function RegisterPage() {
   const [status, setStatus] = useState<string | null>(null);
   const [townCityInput, setTownCityInput] = useState('');
+  const [isTownCityDropdownOpen, setTownCityDropdownOpen] = useState(false);
+  const townCityOptions = shouldOpenTownCityDropdown(townCityInput)
+    ? filterAtlanticTownCities(townCityInput).map((value) => ({ value }))
+    : [];
+  const isTownCityAutocompleteOpen =
+    isTownCityDropdownOpen && shouldOpenTownCityDropdown(townCityInput);
 
   function canonicalTownCityValue(value: string): string {
     return normalizeAtlanticTownCity(value) ?? value;
+  }
+
+  function shouldOpenTownCityDropdown(value: string): boolean {
+    return value.trim().length > 0 && normalizeAtlanticTownCity(value) !== value;
+  }
+
+  function updateTownCityInput(value: string) {
+    const canonicalValue = canonicalTownCityValue(value);
+    setTownCityInput(canonicalValue);
+    setTownCityDropdownOpen(shouldOpenTownCityDropdown(canonicalValue));
+  }
+
+  function selectTownCity(value: string) {
+    setTownCityInput(canonicalTownCityValue(value));
+    setTownCityDropdownOpen(false);
   }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -626,6 +648,7 @@ function RegisterPage() {
       });
       formElement.reset();
       setTownCityInput('');
+      setTownCityDropdownOpen(false);
       setStatus(registerPageContract.successNotice);
     } catch (error) {
       setStatus(error instanceof Error ? error.message : 'Could not submit application.');
@@ -672,20 +695,35 @@ function RegisterPage() {
             />
           </Field>
           <Field label={registerPageContract.townCityLabel}>
-            <TextInput
-              name="town-city"
-              list="atlantic-town-cities"
-              placeholder="Search Town/City"
-              value={townCityInput}
-              onChange={(event) => setTownCityInput(canonicalTownCityValue(event.target.value))}
-              onBlur={(event) => setTownCityInput(canonicalTownCityValue(event.target.value))}
-              required
-            />
-            <datalist id="atlantic-town-cities">
-              {atlanticTownCities.map((townCity) => (
-                <option key={townCity} value={townCity} />
-              ))}
-            </datalist>
+            <Autocomplete
+              emptyLabel="No matching Atlantic municipalities."
+              listboxId="atlantic-town-city-options"
+              listLabel="Available Atlantic municipalities"
+              onSelect={selectTownCity}
+              open={isTownCityAutocompleteOpen}
+              options={townCityOptions}
+            >
+              <TextInput
+                name="town-city"
+                aria-autocomplete="list"
+                aria-controls="atlantic-town-city-options"
+                aria-expanded={isTownCityAutocompleteOpen}
+                aria-haspopup="listbox"
+                autoComplete="off"
+                placeholder="Search municipality"
+                role="combobox"
+                value={townCityInput}
+                onBlur={(event) => {
+                  updateTownCityInput(event.target.value);
+                  setTownCityDropdownOpen(false);
+                }}
+                onChange={(event) => updateTownCityInput(event.target.value)}
+                onFocus={(event) =>
+                  setTownCityDropdownOpen(shouldOpenTownCityDropdown(event.target.value))
+                }
+                required
+              />
+            </Autocomplete>
           </Field>
           <Field label={registerPageContract.founderAffirmationLabel}>
             <TextInput type="checkbox" name="is-company-founder" required />

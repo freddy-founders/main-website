@@ -60,6 +60,13 @@ export const designComponentRegistry = [
     allowedInRoutes: true,
   },
   {
+    name: 'Autocomplete',
+    category: 'composite',
+    status: 'canonical',
+    purpose: 'Input-adjacent dropdown list for filtered form suggestions.',
+    allowedInRoutes: true,
+  },
+  {
     name: 'AuthEntryShell',
     category: 'composite',
     status: 'canonical',
