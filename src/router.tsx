@@ -657,9 +657,11 @@ function RegisterPage() {
           </Field>
           <Field label="Company website">
             <TextInput
-              type="url"
+              type="text"
+              inputMode="url"
               name="company-website-url"
-              placeholder="https://company.com"
+              placeholder="agentmaple.com"
+              autoComplete="url"
               required
             />
           </Field>
