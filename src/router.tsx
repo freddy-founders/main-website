@@ -46,7 +46,7 @@ import type { ProfileAccount, RegistrationRequest } from './domain/accounts';
 import type { CompanySummary } from './domain/companies';
 import type { EventRegistrationAction, EventSummary } from './domain/events';
 import type { PersonSummary } from './domain/people';
-import { atlanticTownCities } from './domain/atlanticTownCities';
+import { atlanticTownCityAutocompleteOptions } from './domain/atlanticTownCities';
 import {
   loginPageContract,
   passwordResetPageContract,
@@ -63,6 +63,8 @@ import { userActions } from './domain/userActions';
 type PublicEventView = EventSummary & {
   registrationAction: EventRegistrationAction;
 };
+
+const townCityAutocompleteOptions = atlanticTownCityAutocompleteOptions();
 
 function useAsyncList<T>(loader: () => Promise<T[]>, deps: DependencyList = [loader]): T[] {
   const [items, setItems] = useState<T[]>([]);
@@ -673,8 +675,10 @@ function RegisterPage() {
               required
             />
             <datalist id="atlantic-town-cities">
-              {atlanticTownCities.map((townCity) => (
-                <option key={townCity} value={townCity} />
+              {townCityAutocompleteOptions.map((option) => (
+                <option key={`${option.value}:${option.canonicalValue}`} value={option.value}>
+                  {option.label}
+                </option>
               ))}
             </datalist>
           </Field>
