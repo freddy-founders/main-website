@@ -5,7 +5,6 @@ import {
   normalizeCompanyDomain,
   prepareFounderRegistrationRequest,
 } from './accounts';
-import { atlanticTownCityAutocompleteOptions } from './atlanticTownCities';
 
 describe('role governance', () => {
   it('gates the admin page to admins only', () => {
@@ -84,14 +83,6 @@ describe('founder registration domain rules', () => {
       ),
     ).toMatchObject({
       townCity: 'Fredericton, NB',
-    });
-  });
-
-  it('offers city-name aliases for location autocomplete', () => {
-    expect(atlanticTownCityAutocompleteOptions()).toContainEqual({
-      value: 'Fredericton',
-      label: 'Fredericton, NB',
-      canonicalValue: 'Fredericton, NB',
     });
   });
 });

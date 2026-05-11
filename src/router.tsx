@@ -46,7 +46,7 @@ import type { ProfileAccount, RegistrationRequest } from './domain/accounts';
 import type { CompanySummary } from './domain/companies';
 import type { EventRegistrationAction, EventSummary } from './domain/events';
 import type { PersonSummary } from './domain/people';
-import { atlanticTownCityAutocompleteOptions } from './domain/atlanticTownCities';
+import { atlanticTownCities, normalizeAtlanticTownCity } from './domain/atlanticTownCities';
 import {
   loginPageContract,
   passwordResetPageContract,
@@ -63,8 +63,6 @@ import { userActions } from './domain/userActions';
 type PublicEventView = EventSummary & {
   registrationAction: EventRegistrationAction;
 };
-
-const townCityAutocompleteOptions = atlanticTownCityAutocompleteOptions();
 
 function useAsyncList<T>(loader: () => Promise<T[]>, deps: DependencyList = [loader]): T[] {
   const [items, setItems] = useState<T[]>([]);
@@ -606,6 +604,11 @@ function LoginCallbackPage() {
 
 function RegisterPage() {
   const [status, setStatus] = useState<string | null>(null);
+  const [townCityInput, setTownCityInput] = useState('');
+
+  function canonicalTownCityValue(value: string): string {
+    return normalizeAtlanticTownCity(value) ?? value;
+  }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -618,10 +621,11 @@ function RegisterPage() {
         name: String(form.get('name') ?? ''),
         email: String(form.get('email') ?? ''),
         companyWebsiteUrl: String(form.get('company-website-url') ?? ''),
-        townCity: String(form.get('town-city') ?? ''),
+        townCity: canonicalTownCityValue(String(form.get('town-city') ?? '')),
         isCompanyFounder: form.get('is-company-founder') === 'on',
       });
       formElement.reset();
+      setTownCityInput('');
       setStatus(registerPageContract.successNotice);
     } catch (error) {
       setStatus(error instanceof Error ? error.message : 'Could not submit application.');
@@ -672,13 +676,14 @@ function RegisterPage() {
               name="town-city"
               list="atlantic-town-cities"
               placeholder="Search Town/City"
+              value={townCityInput}
+              onChange={(event) => setTownCityInput(canonicalTownCityValue(event.target.value))}
+              onBlur={(event) => setTownCityInput(canonicalTownCityValue(event.target.value))}
               required
             />
             <datalist id="atlantic-town-cities">
-              {townCityAutocompleteOptions.map((option) => (
-                <option key={`${option.value}:${option.canonicalValue}`} value={option.value}>
-                  {option.label}
-                </option>
+              {atlanticTownCities.map((townCity) => (
+                <option key={townCity} value={townCity} />
               ))}
             </datalist>
           </Field>

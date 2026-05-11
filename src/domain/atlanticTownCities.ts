@@ -51,19 +51,13 @@ const atlanticTownCitySet = new Set(atlanticTownCities);
 
 const atlanticTownCitiesByCity = new Map<string, AtlanticTownCity[]>();
 for (const townCity of atlanticTownCities) {
-  const cityName = cityNameForTownCity(townCity).toLowerCase();
+  const cityName = townCity.split(',')[0]?.trim().toLowerCase() ?? '';
   const entries = atlanticTownCitiesByCity.get(cityName) ?? [];
   entries.push(townCity);
   atlanticTownCitiesByCity.set(cityName, entries);
 }
 
 export type AtlanticTownCity = (typeof atlanticTownCities)[number];
-
-export interface AtlanticTownCityAutocompleteOption {
-  value: string;
-  label: AtlanticTownCity;
-  canonicalValue: AtlanticTownCity;
-}
 
 export function normalizeAtlanticTownCity(value: string): AtlanticTownCity | null {
   const trimmedValue = value.trim();
@@ -84,32 +78,4 @@ export function filterAtlanticTownCities(query: string): AtlanticTownCity[] {
   if (!normalizedQuery) return [...atlanticTownCities];
 
   return atlanticTownCities.filter((townCity) => townCity.toLowerCase().includes(normalizedQuery));
-}
-
-export function atlanticTownCityAutocompleteOptions(): AtlanticTownCityAutocompleteOption[] {
-  return atlanticTownCities.flatMap((townCity) => {
-    const cityName = cityNameForTownCity(townCity);
-    const canonicalOption = {
-      value: townCity,
-      label: townCity,
-      canonicalValue: townCity,
-    };
-
-    if (cityName === townCity) {
-      return [canonicalOption];
-    }
-
-    return [
-      canonicalOption,
-      {
-        value: cityName,
-        label: townCity,
-        canonicalValue: townCity,
-      },
-    ];
-  });
-}
-
-function cityNameForTownCity(townCity: string): string {
-  return townCity.split(',')[0]?.trim() ?? townCity;
 }

@@ -62,6 +62,7 @@ Feature: Founder application intake
     And the register form does not ask for public directory consent
     And the founder affirmation copy is "I am a founder of this company"
     And the Town/City search for "fred" includes "Fredericton, NB"
+    And entering "Fredericton" for Town/City canonicalizes to "Fredericton, NB"
 
   @auth @pages
   Scenario: Auth form inputs preserve typed casing

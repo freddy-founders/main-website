@@ -1,7 +1,10 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { Then } from '@cucumber/cucumber';
-import { filterAtlanticTownCities } from '../../src/domain/atlanticTownCities';
+import {
+  filterAtlanticTownCities,
+  normalizeAtlanticTownCity,
+} from '../../src/domain/atlanticTownCities';
 import { loginPageContract, registerPageContract } from '../../src/domain/authPages';
 
 Then(
@@ -33,6 +36,13 @@ Then(
   /^the Town\/City search for "([^"]+)" includes "([^"]+)"$/,
   function (query: string, expectedTownCity: string) {
     assert.ok(filterAtlanticTownCities(query).map(String).includes(expectedTownCity));
+  },
+);
+
+Then(
+  /^entering "([^"]+)" for Town\/City canonicalizes to "([^"]+)"$/,
+  function (value: string, expectedTownCity: string) {
+    assert.equal(normalizeAtlanticTownCity(value), expectedTownCity);
   },
 );
 
