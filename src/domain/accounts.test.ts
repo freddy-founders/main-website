@@ -68,4 +68,21 @@ describe('founder registration domain rules', () => {
       isCompanyFounder: true,
     });
   });
+
+  it('accepts an unambiguous city name and stores the canonical province-qualified value', () => {
+    expect(
+      prepareFounderRegistrationRequest(
+        {
+          name: 'Founder',
+          email: 'founder@example.com',
+          companyWebsiteUrl: 'www.example.com',
+          townCity: 'Fredericton',
+          isCompanyFounder: true,
+        },
+        { companyName: 'Scraped Example Co' },
+      ),
+    ).toMatchObject({
+      townCity: 'Fredericton, NB',
+    });
+  });
 });

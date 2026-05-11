@@ -1,4 +1,4 @@
-import { isKnownAtlanticTownCity } from './atlanticTownCities';
+import { normalizeAtlanticTownCity } from './atlanticTownCities';
 
 export type AccountRole = 'member' | 'organizer' | 'admin';
 export type RegistrationRequestStatus = 'pending' | 'approved' | 'archived' | 'rejected';
@@ -102,14 +102,14 @@ export function prepareFounderRegistrationRequest(
   }
 
   const companyDomain = normalizeCompanyDomain(input.companyWebsiteUrl);
-  const townCity = input.townCity.trim();
+  const townCity = normalizeAtlanticTownCity(input.townCity);
 
-  if (townCity.length === 0) {
-    throw new Error('Town/City is required.');
-  }
-
-  if (!isKnownAtlanticTownCity(townCity)) {
-    throw new Error('Choose a Town/City from the Atlantic Canada list.');
+  if (!townCity) {
+    throw new Error(
+      input.townCity.trim().length === 0
+        ? 'Town/City is required.'
+        : 'Choose a Town/City from the Atlantic Canada list.',
+    );
   }
 
   const companyName = companyMetadata.companyName.trim();

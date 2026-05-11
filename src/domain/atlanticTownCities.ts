@@ -49,10 +49,28 @@ export const atlanticTownCities = [
 
 const atlanticTownCitySet = new Set(atlanticTownCities);
 
+const atlanticTownCitiesByCity = new Map<string, AtlanticTownCity[]>();
+for (const townCity of atlanticTownCities) {
+  const cityName = townCity.split(',')[0]?.trim().toLowerCase() ?? '';
+  const entries = atlanticTownCitiesByCity.get(cityName) ?? [];
+  entries.push(townCity);
+  atlanticTownCitiesByCity.set(cityName, entries);
+}
+
 export type AtlanticTownCity = (typeof atlanticTownCities)[number];
 
+export function normalizeAtlanticTownCity(value: string): AtlanticTownCity | null {
+  const trimmedValue = value.trim();
+  if (atlanticTownCitySet.has(trimmedValue as AtlanticTownCity)) {
+    return trimmedValue as AtlanticTownCity;
+  }
+
+  const cityMatches = atlanticTownCitiesByCity.get(trimmedValue.toLowerCase()) ?? [];
+  return cityMatches.length === 1 ? cityMatches[0] : null;
+}
+
 export function isKnownAtlanticTownCity(value: string): value is AtlanticTownCity {
-  return atlanticTownCitySet.has(value.trim() as AtlanticTownCity);
+  return normalizeAtlanticTownCity(value) !== null;
 }
 
 export function filterAtlanticTownCities(query: string): AtlanticTownCity[] {

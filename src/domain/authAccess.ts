@@ -1,5 +1,5 @@
 import type { AccountRole } from './accounts';
-import { isKnownAtlanticTownCity } from './atlanticTownCities';
+import { normalizeAtlanticTownCity } from './atlanticTownCities';
 
 export type AuthApplicationStatus = 'pending' | 'approved' | 'archived';
 export type AuthAccountStatus = 'active' | 'deactivated';
@@ -197,7 +197,7 @@ export function missingFounderApplicationField(
   if (input.email.trim().length === 0) return 'email';
   if (input.companyWebsiteUrl.trim().length === 0) return 'company website';
   if (input.townCity.trim().length === 0) return 'Town/City';
-  if (!isKnownAtlanticTownCity(input.townCity)) return 'Town/City';
+  if (!normalizeAtlanticTownCity(input.townCity)) return 'Town/City';
   return null;
 }
 
