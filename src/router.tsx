@@ -1,4 +1,11 @@
-import { type DependencyList, type FormEvent, type ReactNode, useEffect, useState } from 'react';
+import {
+  type DependencyList,
+  type FormEvent,
+  type KeyboardEvent,
+  type ReactNode,
+  useEffect,
+  useState,
+} from 'react';
 import { Navigate, Route, Routes, useNavigate } from 'react-router-dom';
 import {
   approveRegistrationRequest,
@@ -47,7 +54,7 @@ import type { ProfileAccount, RegistrationRequest } from './domain/accounts';
 import type { CompanySummary } from './domain/companies';
 import type { EventRegistrationAction, EventSummary } from './domain/events';
 import type { PersonSummary } from './domain/people';
-import { filterAtlanticTownCities, normalizeAtlanticTownCity } from './domain/atlanticTownCities';
+import { filterAtlanticTownCities, isCanonicalAtlanticTownCity } from './domain/atlanticTownCities';
 import {
   loginPageContract,
   passwordResetPageContract,
@@ -613,29 +620,53 @@ function RegisterPage() {
   const isTownCityAutocompleteOpen =
     isTownCityDropdownOpen && shouldOpenTownCityDropdown(townCityInput);
 
-  function canonicalTownCityValue(value: string): string {
-    return normalizeAtlanticTownCity(value) ?? value;
+  function selectedTownCityValue(value: string): string | null {
+    const trimmedValue = value.trim();
+    return isCanonicalAtlanticTownCity(trimmedValue) ? trimmedValue : null;
   }
 
   function shouldOpenTownCityDropdown(value: string): boolean {
-    return value.trim().length > 0 && normalizeAtlanticTownCity(value) !== value;
+    return value.trim().length > 0 && selectedTownCityValue(value) === null;
   }
 
-  function updateTownCityInput(value: string) {
-    const canonicalValue = canonicalTownCityValue(value);
-    setTownCityInput(canonicalValue);
-    setTownCityDropdownOpen(shouldOpenTownCityDropdown(canonicalValue));
+  function updateTownCitySearch(value: string) {
+    setTownCityInput(value);
+    setTownCityDropdownOpen(shouldOpenTownCityDropdown(value));
   }
 
   function selectTownCity(value: string) {
-    setTownCityInput(canonicalTownCityValue(value));
+    setTownCityInput(value);
     setTownCityDropdownOpen(false);
+  }
+
+  function handleTownCitySearchKeyDown(event: KeyboardEvent<HTMLInputElement>) {
+    if (event.key === 'Escape') {
+      setTownCityDropdownOpen(false);
+      return;
+    }
+
+    if (event.key !== 'Enter') return;
+
+    const currentValue = event.currentTarget.value;
+    const selectedValue = selectedTownCityValue(currentValue);
+    if (selectedValue) return;
+
+    event.preventDefault();
+    const topTownCity = filterAtlanticTownCities(currentValue)[0];
+    if (topTownCity) selectTownCity(topTownCity);
   }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const formElement = event.currentTarget;
     const form = new FormData(formElement);
+    const townCitySelection = selectedTownCityValue(String(form.get('town-city') ?? ''));
+    if (!townCitySelection) {
+      setTownCityDropdownOpen(shouldOpenTownCityDropdown(townCityInput));
+      setStatus('Choose a Town/City from the Atlantic Canada list.');
+      return;
+    }
+
     setStatus('Submitting application...');
 
     try {
@@ -643,7 +674,7 @@ function RegisterPage() {
         name: String(form.get('name') ?? ''),
         email: String(form.get('email') ?? ''),
         companyWebsiteUrl: String(form.get('company-website-url') ?? ''),
-        townCity: canonicalTownCityValue(String(form.get('town-city') ?? '')),
+        townCity: townCitySelection,
         isCompanyFounder: form.get('is-company-founder') === 'on',
       });
       formElement.reset();
@@ -713,14 +744,12 @@ function RegisterPage() {
                 placeholder="Search municipality"
                 role="combobox"
                 value={townCityInput}
-                onBlur={(event) => {
-                  updateTownCityInput(event.target.value);
-                  setTownCityDropdownOpen(false);
-                }}
-                onChange={(event) => updateTownCityInput(event.target.value)}
+                onBlur={() => setTownCityDropdownOpen(false)}
+                onChange={(event) => updateTownCitySearch(event.target.value)}
                 onFocus={(event) =>
                   setTownCityDropdownOpen(shouldOpenTownCityDropdown(event.target.value))
                 }
+                onKeyDown={handleTownCitySearchKeyDown}
                 required
               />
             </Autocomplete>

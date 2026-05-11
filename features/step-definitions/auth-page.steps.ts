@@ -3,7 +3,8 @@ import { readFileSync } from 'node:fs';
 import { Then } from '@cucumber/cucumber';
 import {
   filterAtlanticTownCities,
-  normalizeAtlanticTownCity,
+  isCanonicalAtlanticTownCity,
+  topAtlanticTownCitySearchResult,
 } from '../../src/domain/atlanticTownCities';
 import { loginPageContract, registerPageContract } from '../../src/domain/authPages';
 
@@ -40,11 +41,15 @@ Then(
 );
 
 Then(
-  /^entering "([^"]+)" for Town\/City canonicalizes to "([^"]+)"$/,
-  function (value: string, expectedTownCity: string) {
-    assert.equal(normalizeAtlanticTownCity(value), expectedTownCity);
+  /^the Town\/City search Enter key for "([^"]+)" selects "([^"]+)"$/,
+  function (query: string, expectedTownCity: string) {
+    assert.equal(topAtlanticTownCitySearchResult(query), expectedTownCity);
   },
 );
+
+Then(/^"([^"]+)" is not accepted as a final Town\/City value$/, function (value: string) {
+  assert.equal(isCanonicalAtlanticTownCity(value), false);
+});
 
 Then('auth text inputs preserve typed casing', function () {
   assert.equal(loginPageContract.preserveTypedInputCase, true);

@@ -69,6 +69,14 @@ export function normalizeAtlanticTownCity(value: string): AtlanticTownCity | nul
   return cityMatches.length === 1 ? cityMatches[0] : null;
 }
 
+export function isCanonicalAtlanticTownCity(value: string): value is AtlanticTownCity {
+  return atlanticTownCitySet.has(value.trim() as AtlanticTownCity);
+}
+
+export function topAtlanticTownCitySearchResult(query: string): AtlanticTownCity | null {
+  return filterAtlanticTownCities(query)[0] ?? null;
+}
+
 export function isKnownAtlanticTownCity(value: string): value is AtlanticTownCity {
   return normalizeAtlanticTownCity(value) !== null;
 }
